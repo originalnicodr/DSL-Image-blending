@@ -23,7 +23,7 @@ data Type = Base
 
 -- Términos con nombres (modificado con mi lenguaje)
 data LamTerm  =  LVar String
-              |  Abs String Type LamTerm --Tengo que sacar el Type de aca, va no me gustaria tenerlo en el lenguaje
+              |  Abs String LamTerm --Tengo que sacar el Type de aca, va no me gustaria tenerlo en el lenguaje
               |  App LamTerm LamTerm
               |  LIC String --imagen A partir de aca esta lo que agregue
               |  LBinOp Op LamTerm LamTerm
