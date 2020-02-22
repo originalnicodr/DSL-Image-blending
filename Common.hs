@@ -17,7 +17,7 @@ data Name
 
 type NameEnv v t = [(Name, (v, t))]
 -- Tipo de los tipos
-data Type = Base 
+data Type = Base
           | Fun Type Type
           deriving (Show, Eq)
 
@@ -30,7 +30,7 @@ data LamTerm  =  LVar String
               |  LBoolOp BOp LamTerm LamTerm
               |  LUnOp UOp LamTerm Float
               |  LComplement LamTerm
-deriving (Show, Eq)
+              deriving Show
 
 -- Modos de blending
 data Op = Normal
@@ -49,25 +49,25 @@ data Op = Normal
         | Hue
         | Luminosity
         | Exclusion
-deriving Show
+        deriving Show
 
 --Funciones booleanas
 data BOp = And
     | Or
     | Xor
-deriving Show
+    deriving Show
 
 --Funciones de tipo Image->Float->Image
 data UOp = Temp
-    | Sat
-    | Mult
-    | Power
-deriving Show
+         | Sat
+         | Multi
+         | Power
+         deriving Show
 
 
 -- Términos localmente sin nombres (aca te encuentra las variables)
 data Term  = Bound Int
-           | Free Name 
+           | Free Name
            | Term :@: Term
            | Lam Type Term --Tengo que sacar el Type de aca, va no me gustaria tenerlo en el lenguaje
            | IC String --imagen A partir de aca esta lo que agregue (sigue igual que antes)
@@ -75,11 +75,11 @@ data Term  = Bound Int
            | BoolOp BOp Term Term
            | UnOp UOp Term Float
            | Complement Term
-deriving (Show, Eq)
+           deriving Show
 
 -- Valores
-data Value = VLam Type Term 
-           | VUnit 
+data Value = VLam Type Term
+           | VUnit
 
 -- Contextos del tipado
 type Context = [Type]

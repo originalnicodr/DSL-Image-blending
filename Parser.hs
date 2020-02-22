@@ -1,21 +1,26 @@
 module Parser where
 
-import Text.ParserCombinators.Parsec
-import Text.Parsec.Token
-import Text.Parsec.Language (emptyDef)
+--import Text.ParserCombinators.Parsec
+--import Text.Parsec.Token
+--import Text.Parsec.Language (emptyDef)
 import Common
+import Parsing
+import Data.Char
+import Control.Monad
+import Control.Applicative hiding (many)
+--import Parsing.lhs
 
 -----------------------
 -- Funcion para facilitar el testing del parser.
-totParser :: Parser a -> Parser a
+{-totParser :: Parser a -> Parser a
 totParser p = do
                   whiteSpace lis
                   t <- p
                   eof --Verifica que no queda nada en el parser
-                  return t
+                  return t-}
 
 -- Analizador de Tokens - Esto lo deberia sacar?
-lis :: TokenParser u
+{-lis :: TokenParser u
 lis = makeTokenParser (emptyDef   { commentStart  = "/*"
                                   , commentEnd    = "*/"
                                   , commentLine   = "//"
@@ -24,122 +29,137 @@ lis = makeTokenParser (emptyDef   { commentStart  = "/*"
                                                      "else", "while", "skip"]
                                   , reservedOpNames = ["+","-","=","-","*","/","!","(",")","{","}"]
                                   })
+-}
 
 
-
-{-LamTerm  ::=  ‘\’ String --variable
-            |  Abs String LamTerm
-            |  App LamTerm LamTerm
+--Lenguaje de escritura
+{-LamTerm  ::=
+            |  '\' String LamTerm --no se si se puede hacer
+            |  App LamTerm LamTerm --por las dudas le dejo el app
             |  I String --imagen A partir de aca esta lo que agregue
-            |  BinOp Op LamTerm LamTerm
-            |  BoolOp BOp LamTerm LamTerm
-            |  UnOp UOp LamTerm Float
+            |  Op LamTerm LamTerm
+            |  BOp LamTerm LamTerm
+            |  UOp LamTerm Float
             |  Complement LamTerm
+            | String --variable
             | ‘(‘ Exp ‘)’-}
 
+--I \direccion
 
---parserLT:: Parser LamTerm --Voy a tener que cambiar lo que recibe para que sea mas lindo de escribir
-parserLT = (do char '('
-              e <- parserLT
-              char ')'
-              return e)
-            <|>(do char '\' --hay que ver si me deja ver este caracter 
-                   v <- many1 alphanum --los nombres de variables spueden ser alfanumericos
-                   e <- parserLT
-                   return (Abs v e)) --deberia tener parentesis el e?
-            <|>(do symbol "App" -- No pasar por la Aplicacion creo que seria muy complicado
-                   e1 <- parserLT
-                   e2 <- parserLT
-                   return (App e1 e2))
-            <|>(do symbol "I"
-                   d <- many directory --chequear esto
-                   return (LIC d))
-            <|>(do symbol "BinOp"
-                   f <- bopParser
-                   e1 <- parserLT
-                   e2 <- parserLT
-                   return (LBinOp f e1 e2))
-            <|> (do symbol "BoolOp"
-                    f <- boolopParser
-                    e1 <- parserLT
-                    e2 <- parserLT
-                    return (LBoolOp f e1 e2))
-            <|> (do symbol "UnOp"
-                    f <- uopParser
-                    e1 <- parserLT
-                    d <- floatparser
-                    return (LUnOp f e1 d))
-            <|> (do symbol "Complement"
-                    e <- parserLT
-                    return (LComplement e))
-            <|> (do v <- many1 alphanum --los nombres de variables spueden ser alfanumericos (si llego aca significa que no va a guardar nada que no sea una variable?)
-                    return (LVar v))
-            <|> failure
-            
+floatParser :: Parser Char --usar con many1
+floatParser = sat (\x -> (isDigit x) || (x=='.')) --podria mejorarse para que solo exista un punto
+
+
 
 directory :: Parser Char
-directory =  sat isAlphaNum || (=='.') || (=='\') --Las cosas que pueden componer una direccion (podria hacerse mas fino)
+directory =  sat (\x -> (isAlphaNum x) || (x=='.') || (x=='\\')) --Las cosas que pueden componer una direccion (podria hacerse mas fino)
 
 bopParser :: Parser Op
-bopParser = (do String "Normal"
+bopParser = (do string "Normal"
                 return Normal)
-            <|>(do String "Add"
+            <|>(do string "Add"
                    return Add)
-                <|>(do String "Sub"
+                <|>(do string "Sub"
                        return Sub)
-                    <|>(do String "Diff"
+                    <|>(do string "Diff"
                            return Diff)
-                        <|>(do String "Div"
+                        <|>(do string "Div"
                                return Div)
-                            <|>(do String "Mult"
+                            <|>(do string "Mult"
                                    return Mult)
-                                <|>(do String "Darken"
+                                <|>(do string "Darken"
                                        return Darken)
-                                    <|>(do String "Lighten"
+                                    <|>(do string "Lighten"
                                            return Lighten)
-                                        <|>(do String "Multiply"
+                                        <|>(do string "Multiply"
                                                return Multiply)
-                                            <|>(do String "Screen"
+                                            <|>(do string "Screen"
                                                    return Screen)
-                                                <|>(do String "Overlay"
+                                                <|>(do string "Overlay"
                                                        return Overlay)
-                                                    <|>(do String"HardLight"
+                                                    <|>(do string"HardLight"
                                                            return HardLight)
-                                                        <|>(do String "SoftLight"
+                                                        <|>(do string "SoftLight"
                                                                return SoftLight)
-                                                            <|>(do String "Hue"
+                                                            <|>(do string "Hue"
                                                                    return Hue)
-                                                                <|>(do String "Luminosity"
+                                                                <|>(do string "Luminosity"
                                                                        return Luminosity)
-                                                                    <|>(do String "Exclusion"
+                                                                    <|>(do string "Exclusion"
                                                                            return Exclusion)
                                                                         <|> failure
 
 boolopParser :: Parser BOp
-boolopParser =(do String "And"
+boolopParser =(do string "And"
                   return And)
-                <|>(do String "Or"
+                <|>(do string "Or"
                        return Or)
-                    <|>(do String "Xor"
+                    <|>(do string "Xor"
                            return Xor)
                         <|> failure
 
 uopParser :: Parser UOp
-uopParser =(do String "Temp"
+uopParser =(do string "Temp"
                return Temp)
-                <|>(do String "Sat"
+                <|>(do string "Sat"
                        return Sat)
-                    <|>(do String "Mult"
-                           return Mult)
-                        <|> (do String "Power"
+                    <|>(do string "Multi"
+                           return Multi)
+                        <|> (do string "Power"
                                 return Power)
                         <|> failure
 
-floatParser :: Parser Float --usar con many1
-floatParser = sat isDigit || (=='.') --podria mejorarse para que solo exista un punto
+--parserLT:: Parser LamTerm --Voy a tener que cambiar lo que recibe para que sea mas lindo de escribir
+parserLT =        (do char '\\' --hay que ver si me deja ver este caracter
+                      v <- many1 (sat isAlphaNum) --los nombres de variables spueden ser alfanumericos
+                      e <- parserLT
+                      return (Abs v e)) --deberia tener parentesis el e?
+                      <|>(do symbol "App" -- No pasar por la Aplicacion creo que seria muy complicado
+                             e1 <- parserLT
+                             space
+                             e2 <- parserLT
+                             space
+                             return (App e1 e2))
+                             <|>(do symbol "I"
+                                    d <- many1 directory --chequear esto
+                                    space
+                                    return (LIC d))
+                                    <|>(do symbol "BinOp"
+                                           f <- bopParser
+                                           space
+                                           e1 <- parserLT
+                                           space
+                                           e2 <- parserLT
+                                           return (LBinOp f e1 e2))
+                                           <|> (do symbol "BoolOp"
+                                                   f <- boolopParser
+                                                   space
+                                                   e1 <- parserLT
+                                                   space
+                                                   e2 <- parserLT
+                                                   return (LBoolOp f e1 e2))
+                                                   <|> (do symbol "UnOp"
+                                                           f <- uopParser
+                                                           space
+                                                           e1 <- parserLT
+                                                           space
+                                                           d <- many1 floatParser
+                                                           return (LUnOp f e1 (read d::Float)))
+                                                           <|> (do symbol "Complement"
+                                                                   e <- parserLT
+                                                                   return (LComplement e))
+                                                                   <|> (do v <- many1 alphanum --los nombres de variables spueden ser alfanumericos (si llego aca significa que no va a guardar nada que no sea una variable?)
+                                                                           return (LVar v))
+                                                                           <|>(do char '('
+                                                                                  space
+                                                                                  e <- parserLT
+                                                                                  space
+                                                                                  char ')'
+                                                                                  return e)
+
 
 ------------------------------------
 -- Función de parseo
 ------------------------------------
-parseComm :: SourceName -> String -> Either ParseError Comm
-parseComm = parse (totParser comm)
+--parseComm :: SourceName -> String -> Either ParseError LamTerm
+parsear = parse parserLT
