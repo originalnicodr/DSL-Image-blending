@@ -1,4 +1,12 @@
 module Parser where
+--Dependencias
+{-
+Graphics algo
+z lib de case c
+path
+
+-}
+
 
 --import Text.ParserCombinators.Parsec
 --import Text.Parsec.Token
@@ -8,6 +16,8 @@ import Parsing
 import Data.Char
 import Control.Monad
 import Control.Applicative hiding (many)
+--import Path
+import System.FilePath.Posix
 --import Parsing.lhs
 
 -----------------------
@@ -32,19 +42,7 @@ lis = makeTokenParser (emptyDef   { commentStart  = "/*"
 -}
 
 
---Lenguaje de escritura
-{-LamTerm  ::=
-            |  '\' String LamTerm --no se si se puede hacer
-            |  App LamTerm LamTerm --por las dudas le dejo el app
-            |  I String --imagen A partir de aca esta lo que agregue
-            |  Op LamTerm LamTerm
-            |  BOp LamTerm LamTerm
-            |  UOp LamTerm Float
-            |  Complement LamTerm
-            | String --variable
-            | ‘(‘ Exp ‘)’-}
 
---I \direccion
 
 floatParser :: Parser Char --usar con many1
 floatParser = sat (\x -> (isDigit x) || (x=='.')) --podria mejorarse para que solo exista un punto
@@ -52,7 +50,7 @@ floatParser = sat (\x -> (isDigit x) || (x=='.')) --podria mejorarse para que so
 
 
 directory :: Parser Char
-directory =  sat (\x -> (isAlphaNum x) || (x=='.') || (x=='\\')) --Las cosas que pueden componer una direccion (podria hacerse mas fino)
+directory =  sat (\x -> (isAlphaNum x) || (x=='.') || (isPathSeparator x)) --No acepta direcciones con espacios, podria poner algo para limitarlo tipo <>
 
 bopParser :: Parser Op
 bopParser = (do string "Normal"
@@ -109,9 +107,26 @@ uopParser =(do string "Temp"
                                 return Power)
                         <|> failure
 
+
+--Lenguaje de escritura
+{-LamTerm  ::=
+            |  '\' String LamTerm --no se si se puede hacer
+            |  App LamTerm LamTerm --por las dudas le dejo el app
+            |  I String --imagen A partir de aca esta lo que agregue
+            |  Op LamTerm LamTerm
+            |  BOp LamTerm LamTerm
+            |  UOp LamTerm Float
+            |  Complement LamTerm
+            | String --variable
+            | ‘(‘ Exp ‘)’-}
+
+--I \direccion
+
 --parserLT:: Parser LamTerm --Voy a tener que cambiar lo que recibe para que sea mas lindo de escribir
 parserLT =        (do char '\\' --hay que ver si me deja ver este caracter
+                      space
                       v <- many1 (sat isAlphaNum) --los nombres de variables spueden ser alfanumericos
+                      space
                       e <- parserLT
                       return (Abs v e)) --deberia tener parentesis el e?
                       <|>(do symbol "App" -- No pasar por la Aplicacion creo que seria muy complicado
@@ -121,25 +136,24 @@ parserLT =        (do char '\\' --hay que ver si me deja ver este caracter
                              space
                              return (App e1 e2))
                              <|>(do symbol "I"
-                                    d <- many1 directory --chequear esto
+                                    d <- many1 directory --chequear que creo que no le va a caer bien al evaluador
                                     space
-                                    return (LIC d))
-                                    <|>(do symbol "BinOp"
-                                           f <- bopParser
+                                    return (LIC (show d)))
+                                    <|>(do f <- bopParser
                                            space
                                            e1 <- parserLT
                                            space
                                            e2 <- parserLT
+                                           space
                                            return (LBinOp f e1 e2))
-                                           <|> (do symbol "BoolOp"
-                                                   f <- boolopParser
+                                           <|> (do f <- boolopParser
                                                    space
                                                    e1 <- parserLT
                                                    space
                                                    e2 <- parserLT
+                                                   space
                                                    return (LBoolOp f e1 e2))
-                                                   <|> (do symbol "UnOp"
-                                                           f <- uopParser
+                                                   <|> (do f <- uopParser
                                                            space
                                                            e1 <- parserLT
                                                            space
@@ -147,6 +161,7 @@ parserLT =        (do char '\\' --hay que ver si me deja ver este caracter
                                                            return (LUnOp f e1 (read d::Float)))
                                                            <|> (do symbol "Complement"
                                                                    e <- parserLT
+                                                                   space
                                                                    return (LComplement e))
                                                                    <|> (do v <- many1 alphanum --los nombres de variables spueden ser alfanumericos (si llego aca significa que no va a guardar nada que no sea una variable?)
                                                                            return (LVar v))
@@ -155,8 +170,11 @@ parserLT =        (do char '\\' --hay que ver si me deja ver este caracter
                                                                                   e <- parserLT
                                                                                   space
                                                                                   char ')'
+                                                                                  space
                                                                                   return e)
-
+test = do d <- item
+          return (show d)
+-- /cluster.jpg
 
 ------------------------------------
 -- Función de parseo
