@@ -1,3 +1,4 @@
+--module Testhip where
 {-# LANGUAGE FlexibleContexts #-}
 import Prelude as P
 import Graphics.Image as I
@@ -66,11 +67,23 @@ difference a b = abs (a-b)
 --exclusion::Double -> Double -> Double
 exclusion a b = a + b -2*a*b
 
+opposite im = I.map (fmap opp) im
+              where opp x= 1-x
+
+
+--Operaciones unarias
+
+
+
+
 fmap2 (PixelRGB r1 g1 b1)  (PixelRGB r2 g2 b2) f = (PixelRGB (f r1 r2) (f g1 g2) (f b1 b2))
 
 --blend::(MArray arr RGB Double, Array arr1 RGB Double, Array arr1 RGB Double) =>Image arr RGB Double -> Image arr RGB Double -> ((Int, Int) -> Pixel RGB Double -> Pixel RGB Double)-> Image arr RGB Double
 blend::(MArray arr RGB t,Array arr1 RGB t,Array arr1 RGB e) => Image arr1 RGB t -> Image arr RGB t -> (t -> t -> e) -> Image arr1 RGB e --ATENCION: Estoy usando FlexibleContexts, sin setear eso en ghci se rompe
 blend im1 im2 f = I.imap (\(i,j) p1 -> fmap2 p1 (index im2 (i,j)) f) im1
+
+--edit::(MArray arr RGB t,Array arr1 RGB e) => Image arr RGB t -> (t -> Float -> e) -> Image arr1 RGB e
+edit im d f = I.map (fmap f d) im
 
 {-sat::PixelRGB->Double
 sat PixelRGB r g b = (max (max r g) b) - (min (min r g) b)

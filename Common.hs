@@ -21,6 +21,9 @@ data Type = Base
           | Fun Type Type
           deriving (Show, Eq)
 
+
+--Editar Lenguaje para sacar BoolOp y para aceptar funciones en lugar de operaciones
+
 -- Términos con nombres (modificado con mi lenguaje)
 data LamTerm  =  LVar String
               |  Abs String LamTerm --Tengo que sacar el Type de aca, va no me gustaria tenerlo en el lenguaje
@@ -31,7 +34,6 @@ data LamTerm  =  LVar String
               |  LUnOp UOp LamTerm Float
               |  LComplement LamTerm
               deriving Show
-
 -- Modos de blending
 data Op = Normal
         | Add
@@ -69,7 +71,7 @@ data UOp = Temp
 data Term  = Bound Int
            | Free Name
            | Term :@: Term
-           | Lam Type Term --Tengo que sacar el Type de aca, va no me gustaria tenerlo en el lenguaje
+           | Lam Term --No se pone la variable por que no es necesario, ya se guardo con las otras variables al realizar la conversion
            | IC String --imagen A partir de aca esta lo que agregue (sigue igual que antes)
            | BinOp Op Term Term
            | BoolOp BOp Term Term

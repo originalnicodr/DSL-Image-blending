@@ -18,6 +18,7 @@ import Control.Monad
 import Control.Applicative hiding (many)
 --import Path
 import System.FilePath.Posix
+import System.Environment (getArgs)
 --import Parsing.lhs
 
 -----------------------
@@ -181,3 +182,12 @@ test = do d <- item
 ------------------------------------
 --parseComm :: SourceName -> String -> Either ParseError LamTerm
 parsear = parse parserLT
+
+{-main :: IO ()
+main = do arg:_ <- getArgs
+          run arg-}
+
+-- Ejecuta un programa a partir de su archivo fuente
+--run :: [Char] -> IO ()
+run ifile = do s <- readFile ifile
+               print (parsear s)
