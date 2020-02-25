@@ -25,15 +25,24 @@ data Type = Base
 --Editar Lenguaje para sacar BoolOp y para aceptar funciones en lugar de operaciones
 
 -- Términos con nombres (modificado con mi lenguaje)
-data LamTerm  =  LVar String
+{-data LamTerm  =  LVar String
               |  Abs String LamTerm --Tengo que sacar el Type de aca, va no me gustaria tenerlo en el lenguaje
               |  App LamTerm LamTerm
               |  LIC String --imagen A partir de aca esta lo que agregue
               |  LBinOp Op LamTerm LamTerm
-              |  LBoolOp BOp LamTerm LamTerm
               |  LUnOp UOp LamTerm Float
               |  LComplement LamTerm
-              deriving Show
+              deriving Show-}
+
+data LamTerm  =  LVar String
+              |  Abs String LamTerm --Tengo que sacar el Type de aca, va no me gustaria tenerlo en el lenguaje
+              |  App LamTerm LamTerm
+              |  LIC String --imagen A partir de aca esta lo que agregue
+              |  LBinOp (Double->Double->Double) LamTerm LamTerm
+              |  LUnOp (Double->Double->Double) LamTerm Double
+              |  LComplement LamTerm
+              --deriving Show
+
 -- Modos de blending
 data Op = Normal
         | Add
@@ -53,12 +62,6 @@ data Op = Normal
         | Exclusion
         deriving Show
 
---Funciones booleanas
-data BOp = And
-    | Or
-    | Xor
-    deriving Show
-
 --Funciones de tipo Image->Float->Image
 data UOp = Temp
          | Sat
@@ -73,11 +76,10 @@ data Term  = Bound Int
            | Term :@: Term
            | Lam Term --No se pone la variable por que no es necesario, ya se guardo con las otras variables al realizar la conversion
            | IC String --imagen A partir de aca esta lo que agregue (sigue igual que antes)
-           | BinOp Op Term Term
-           | BoolOp BOp Term Term
-           | UnOp UOp Term Float
+           | BinOp (Double->Double->Double) Term Term
+           | UnOp (Double->Double->Double) Term Double
            | Complement Term
-           deriving Show
+           --deriving Show
 
 -- Valores
 data Value = VLam Type Term
@@ -85,3 +87,44 @@ data Value = VLam Type Term
 
 -- Contextos del tipado
 type Context = [Type]
+
+
+
+
+
+--normal::Double -> Double -> Double
+normal a b = b
+
+--multiply::Double -> Double -> Double
+multiply a b = a*b
+
+--screen::Double -> Double -> Double
+screen a b = a + b - (a*b)
+
+--overlay::Double -> Double -> Double
+overlay a b = hardlight b a
+
+--darken::Double -> Double -> Double
+darken a b = min a b
+
+--lighten::Double -> Double -> Double
+ligthen a b = max a b
+
+--colordodge::Double -> Double -> Double
+colordodge a b = if b==1 then 1 else min 1 (a/(1-b))
+
+--colorburn::Double -> Double -> Double
+colorburn a b = if b==0 then 0 else 1 - min 1 ((1-a)/b)
+
+hardlight::Double -> Double -> Double
+hardlight a b = if (b <= 0.5) then multiply a 2*b else screen a 2*b-1
+
+--softlight::Double -> Double -> Double
+softlight a b = if (b <= 0.5) then a - (1-2*b)*a*(1-a) else a + (2*b-1)*((d a) - a)
+                where d x = if (x>0.25) then sqrt x else ((16*x-12)*x+4)*x
+
+--difference::Double -> Double -> Double
+difference a b = abs (a-b)
+
+--exclusion::Double -> Double -> Double
+exclusion a b = a + b -2*a*b

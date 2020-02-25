@@ -88,15 +88,6 @@ bopParser = (do string "Normal"
                                                                            return Exclusion)
                                                                         <|> failure
 
-boolopParser :: Parser BOp
-boolopParser =(do string "And"
-                  return And)
-                <|>(do string "Or"
-                       return Or)
-                    <|>(do string "Xor"
-                           return Xor)
-                        <|> failure
-
 uopParser :: Parser UOp
 uopParser =(do string "Temp"
                return Temp)
@@ -147,32 +138,25 @@ parserLT =        (do char '\\' --hay que ver si me deja ver este caracter
                                            e2 <- parserLT
                                            space
                                            return (LBinOp f e1 e2))
-                                           <|> (do f <- boolopParser
+                                           <|> (do f <- uopParser
                                                    space
                                                    e1 <- parserLT
                                                    space
-                                                   e2 <- parserLT
-                                                   space
-                                                   return (LBoolOp f e1 e2))
-                                                   <|> (do f <- uopParser
+                                                   d <- many1 floatParser
+                                                   return (LUnOp f e1 (read d::Float)))
+                                                   <|> (do symbol "Complement"
+                                                           e <- parserLT
                                                            space
-                                                           e1 <- parserLT
-                                                           space
-                                                           d <- many1 floatParser
-                                                           return (LUnOp f e1 (read d::Float)))
-                                                           <|> (do symbol "Complement"
-                                                                   e <- parserLT
-                                                                   space
-                                                                   return (LComplement e))
-                                                                   <|> (do v <- many1 alphanum --los nombres de variables spueden ser alfanumericos (si llego aca significa que no va a guardar nada que no sea una variable?)
-                                                                           return (LVar v))
-                                                                           <|>(do char '('
-                                                                                  space
-                                                                                  e <- parserLT
-                                                                                  space
-                                                                                  char ')'
-                                                                                  space
-                                                                                  return e)
+                                                           return (LComplement e))
+                                                           <|> (do v <- many1 alphanum --los nombres de variables spueden ser alfanumericos (si llego aca significa que no va a guardar nada que no sea una variable?)
+                                                                   return (LVar v))
+                                                                   <|>(do char '('
+                                                                          space
+                                                                          e <- parserLT
+                                                                          space
+                                                                          char ')'
+                                                                          space
+                                                                          return e)
 test = do d <- item
           return (show d)
 -- /cluster.jpg
