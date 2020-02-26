@@ -53,40 +53,36 @@ floatParser = sat (\x -> (isDigit x) || (x=='.')) --podria mejorarse para que so
 directory :: Parser Char
 directory =  sat (\x -> (isAlphaNum x) || (x=='.') || (isPathSeparator x)) --No acepta direcciones con espacios, podria poner algo para limitarlo tipo <>
 
-bopParser :: Parser Op
 bopParser = (do string "Normal"
                 return Normal)
             <|>(do string "Add"
                    return Add)
-                <|>(do string "Sub"
-                       return Sub)
-                    <|>(do string "Diff"
-                           return Diff)
-                        <|>(do string "Div"
-                               return Div)
-                            <|>(do string "Mult"
-                                   return Mult)
-                                <|>(do string "Darken"
-                                       return Darken)
-                                    <|>(do string "Lighten"
-                                           return Lighten)
-                                        <|>(do string "Multiply"
-                                               return Multiply)
-                                            <|>(do string "Screen"
-                                                   return Screen)
-                                                <|>(do string "Overlay"
-                                                       return Overlay)
-                                                    <|>(do string"HardLight"
-                                                           return HardLight)
-                                                        <|>(do string "SoftLight"
-                                                               return SoftLight)
-                                                            <|>(do string "Hue"
-                                                                   return Hue)
-                                                                <|>(do string "Luminosity"
-                                                                       return Luminosity)
-                                                                    <|>(do string "Exclusion"
-                                                                           return Exclusion)
-                                                                        <|> failure
+                <|>(do string "Diff"
+                       return Diff)
+                    <|>(do string "ColorDodge"
+                           return ColorDodge)
+                        <|>(do string "ColorBurn"
+                               return ColorBurn)
+                            <|>(do string "Darken"
+                                   return Darken)
+                                <|>(do string "Lighten"
+                                       return Lighten)
+                                    <|>(do string "Multiply"
+                                           return Multiply)
+                                        <|>(do string "Screen"
+                                               return Screen)
+                                            <|>(do string "Overlay"
+                                                   return Overlay)
+                                                <|>(do string"HardLight"
+                                                       return HardLight)
+                                                    <|>(do string "SoftLight"
+                                                           return SoftLight)
+                                                        <|>(do string "Hue"
+                                                               return Hue)
+                                                            <|>(do string "Luminosity"
+                                                                   return Luminosity)
+                                                                <|>(do string "Exclusion"
+                                                                       return Exclusion)
 
 uopParser :: Parser UOp
 uopParser =(do string "Temp"
@@ -97,7 +93,6 @@ uopParser =(do string "Temp"
                            return Multi)
                         <|> (do string "Power"
                                 return Power)
-                        <|> failure
 
 
 --Lenguaje de escritura
@@ -143,7 +138,7 @@ parserLT =        (do char '\\' --hay que ver si me deja ver este caracter
                                                    e1 <- parserLT
                                                    space
                                                    d <- many1 floatParser
-                                                   return (LUnOp f e1 (read d::Float)))
+                                                   return (LUnOp f e1 (read d::Double)))
                                                    <|> (do symbol "Complement"
                                                            e <- parserLT
                                                            space
@@ -174,4 +169,4 @@ main = do arg:_ <- getArgs
 -- Ejecuta un programa a partir de su archivo fuente
 --run :: [Char] -> IO ()
 run ifile = do s <- readFile ifile
-               print (parsear s)
+               return (parsear s)

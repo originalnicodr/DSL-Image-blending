@@ -38,18 +38,15 @@ data LamTerm  =  LVar String
               |  Abs String LamTerm --Tengo que sacar el Type de aca, va no me gustaria tenerlo en el lenguaje
               |  App LamTerm LamTerm
               |  LIC String --imagen A partir de aca esta lo que agregue
-              |  LBinOp (Double->Double->Double) LamTerm LamTerm
-              |  LUnOp (Double->Double->Double) LamTerm Double
+              |  LBinOp Op LamTerm LamTerm
+              |  LUnOp UOp LamTerm Double
               |  LComplement LamTerm
-              --deriving Show
+              deriving Show
 
 -- Modos de blending
 data Op = Normal
         | Add
-        | Sub
         | Diff
-        | Div
-        | Mult
         | Darken
         | Lighten
         | Multiply
@@ -57,6 +54,8 @@ data Op = Normal
         | Overlay
         | HardLight
         | SoftLight
+        | ColorDodge
+        | ColorBurn
         | Hue
         | Luminosity
         | Exclusion
@@ -95,6 +94,11 @@ type Context = [Type]
 --normal::Double -> Double -> Double
 normal a b = b
 
+add a b= (a + b)/2
+
+hue a b = b
+luminosity a b= b
+
 --multiply::Double -> Double -> Double
 multiply a b = a*b
 
@@ -108,7 +112,7 @@ overlay a b = hardlight b a
 darken a b = min a b
 
 --lighten::Double -> Double -> Double
-ligthen a b = max a b
+lighten a b = max a b
 
 --colordodge::Double -> Double -> Double
 colordodge a b = if b==1 then 1 else min 1 (a/(1-b))
@@ -128,3 +132,17 @@ difference a b = abs (a-b)
 
 --exclusion::Double -> Double -> Double
 exclusion a b = a + b -2*a*b
+
+
+
+temp::Double -> Double -> Double
+temp a d= a
+
+saturation::Double -> Double -> Double
+saturation a d= a
+
+multi::Double -> Double -> Double
+multi a d= a
+
+power::Double -> Double -> Double
+power a d= a
