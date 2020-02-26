@@ -58,6 +58,8 @@ instance Monad m => Applicative (ErrorMT m) where
 
 
 
+
+
 --raise:: String ->ErrorMT m a
 raise s= ErrorMT (return (EM s))
 
@@ -80,9 +82,23 @@ opposite im = (I.map (fmap (\x -> 1-x)) im)
 
 
 --eval :: LamTerm -> ErrorM
-eval t = evalTerm (conversion (fst (head t)))
-eval2 t=evalTerm (conversion t)
---eval (fst (head (parsear "\\ x (Multiply x x)")))
+--eval t = evalTerm (conversion (fst (head t)))
+--eval (parsear "\\ x (Multiply x x)")
+
+
+eval t= let a= runErrorMT(evalTerm' (conversion (fst (head (parsear t)))))
+            in a >>= (\i -> case i of
+                            JustE x -> writeImage "/home/nico/Desktop/output.jpg" x
+                            EM s -> print s)
+--eval "Darken I cluster.jpg I centaurus.jpg"
+
+evaldev t= let a= runErrorMT(evalTerm' t)
+           in a >>= (\i -> case i of
+                            JustE x -> writeImage "/home/nico/Desktop/output.jpg" x
+                            EM s -> print s)
+
+--evaldev (BinOp Darken (IC "cluster.jpg") (IC "cluster.jpg"))
+--ErrorMT IO (Image arr RGB Double)
 
 -- conversion a términos localmente sin nombres
 conversion :: LamTerm -> Term
@@ -93,8 +109,8 @@ conversion' b (LVar n)     = maybe (Free (Global n)) Bound (n `elemIndex` b)
 conversion' b (App t u)    = conversion' b t :@: conversion' b u
 conversion' b (Abs t u)  = Lam (conversion' (t:b) u)--hay que sacarle el tipado de aca
 conversion' b (LIC s) = IC s
-conversion' b (LBinOp f e1 e2) = BinOp (convfb f) (conversion' b e1) (conversion' b e2)
-conversion' b (LUnOp f e d) = UnOp (convfu f) (conversion' b e) d
+conversion' b (LBinOp f e1 e2) = BinOp f (conversion' b e1) (conversion' b e2) --(convfb f)
+conversion' b (LUnOp f e d) = UnOp f (conversion' b e) d --(convfu f)
 conversion' b (LComplement e) = Complement (conversion' b e)
 
 convfb :: Op -> (Double->Double->Double)
@@ -143,21 +159,21 @@ sub i t (Complement e)        = Complement (sub i t e)
 --IO (Image arr RGB Double) -> IO (ErrorM (Image arr RGB Double))
 --liftIO (readimage)
 --evalTerm :: Term-> ErrorMT IO ()
-evalTerm t= let x = evalTerm' t
-            in x >>= (\i -> (let y= (writeImage "/home/nico/Desktop/output.jpg" i)--Lo malo de usar bind para guardar la imagen es que no tira mensaje de error
+{-evalTerm t= let x = evalTerm' t
+            in x >>= (\i -> (let y= (writeImage "output.jpg" i)--Lo malo de usar bind para guardar la imagen es que no tira mensaje de error
                              in x))
+-}
 
 
---eval (fst (head (parsear "\\ x (Multiply x x)")))
 --evalTerm' :: (Array arr1 RGB Double) => Term -> ErrorMT IO (Image arr RGB Double)
 evalTerm' (Bound _)  = raise "variable ligada inesperada en eval" --el return que usa deberia ser del IO
 evalTerm' (Free n)     = raise "variable libre"--fst $ fromJust $ lookup n e --para mi aca hay que poner un error
 evalTerm' (Lam t)      = raise "funcion sin termino para reemplazar en la variable"
-evalTerm' (Lam u :@: v) = evalTerm (sub 0 v u)
+evalTerm' (Lam u :@: v) = evalTerm' (sub 0 v u)
 evalTerm' (IC dim) = ErrorMT (do x <- readImageRGB VU dim--Va a usar un >>= diferente? por que se esta metiendo con la monada IO y la de imagenes creo
                                  return (JustE x))
-evalTerm' (BinOp f e1 e2) = (evalTerm' e1) >>= (\x -> (evalTerm' e2) >>= (\y -> if ((dims x) == (dims y)) then return (blend x y f) else ErrorMT (return (EM "Las imagenes tienen dimensiones diferentes"))))--Como necesito los bind de IO para sacar las imagenes los return tienen que estar escritos asi
-evalTerm' (UnOp f e1 d) = (evalTerm' e1) >>= (\x -> return (edit f x d))---es una funcion por que le falta pasar la imagen al final
+evalTerm' (BinOp f e1 e2) = (evalTerm' e1) >>= (\x -> (evalTerm' e2) >>= (\y -> if ((dims x) == (dims y)) then return (blend x y (convfb f)) else ErrorMT (return (EM "Las imagenes tienen dimensiones diferentes"))))--Como necesito los bind de IO para sacar las imagenes los return tienen que estar escritos asi
+evalTerm' (UnOp f e1 d) = (evalTerm' e1) >>= (\x -> return (edit (convfu f) x d))---es una funcion por que le falta pasar la imagen al final
 evalTerm' (Complement e)= (evalTerm' e) >>= (\x -> return (opposite x))--es aplicar la funcion de doubles opposite a cada pixel de e'
 
 

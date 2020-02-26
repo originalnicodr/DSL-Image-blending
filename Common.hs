@@ -70,7 +70,7 @@ data UOp = Temp
 
 
 -- Términos localmente sin nombres (aca te encuentra las variables)
-data Term  = Bound Int
+{-data Term  = Bound Int
            | Free Name
            | Term :@: Term
            | Lam Term --No se pone la variable por que no es necesario, ya se guardo con las otras variables al realizar la conversion
@@ -79,6 +79,19 @@ data Term  = Bound Int
            | UnOp (Double->Double->Double) Term Double
            | Complement Term
            --deriving Show
+-}
+
+data Term  = Bound Int
+           | Free Name
+           | Term :@: Term
+           | Lam Term --No se pone la variable por que no es necesario, ya se guardo con las otras variables al realizar la conversion
+           | IC String --imagen A partir de aca esta lo que agregue (sigue igual que antes)
+           | BinOp Op Term Term
+           | UnOp UOp Term Double
+           | Complement Term
+           deriving Show
+
+
 
 -- Valores
 data Value = VLam Type Term
