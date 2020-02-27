@@ -1,4 +1,5 @@
 module Common where
+import Graphics.Image as I
 
 -- Comandos interactivos o de archivos
 data Stmt i = Def String i           --  Declarar un nuevo identificador x, let x = t
@@ -64,8 +65,15 @@ data Op = Normal
 --Funciones de tipo Image->Float->Image
 data UOp = Temp
          | Sat
-         | Multi
-         | Power
+         | Vib
+         | Multi--sacar
+         | Power--sacar
+         | Contrast
+         | Shadows
+         | Lights
+         | Whites
+         | Blacks
+
          deriving Show
 
 
@@ -100,62 +108,121 @@ data Value = VLam Type Term
 -- Contextos del tipado
 type Context = [Type]
 
+--Hago una funcion map que no me mapea el canal alpha
+rgbamap f (PixelRGBA r1 g1 b1 a1) = (PixelRGBA (f r1) (f g1) (f b1) a1)
 
+--Para dos argumentos, mapeo y combino
+blendpixel f (PixelRGBA r1 g1 b1 a1) (PixelRGBA r2 g2 b2 a2)= (PixelRGBA ((f r1 r2)*a2+r1*a1*(1-a2)) ((f g1 g2)*a2+g1*a1*(1-a2)) ((f b1 b2)*a2+b1*a1*(1-a2)) (a2+a1*(1-a2)))
 
+alphablend c1 cr a1 a2=(cr*a2+c1*a1*(1-a2))-- /(a2+a1*(1-a2))
 
+--normal (PixelRGBA r1 g1 b1 a1)  (PixelRGBA r2 g2 b2 a2)= (PixelRGBA (alphablend r1 r2 a1 a2) (alphablend g1 g2 a1 a2) (alphablend b1 b2 a1 a2) (a2+a1*(1-a2)))--chequear si el fmap me afecta el alpha
 
---normal::Double -> Double -> Double
-normal a b = b
+normal a b= blendpixel normald a b
 
-add a b= (a + b)/2
+add (PixelRGBA r1 g1 b1 a1)  (PixelRGBA r2 g2 b2 a2)= (PixelRGBA (alphablend r1 (r1+r2) a1 a2) (alphablend g1 (g1+g2) a1 a2) (alphablend b1 (b1+b2) a1 a2) (a2+a1*(1-a2)))
 
 hue a b = b
 luminosity a b= b
 
+
+multiply (PixelRGBA r1 g1 b1 a1)  (PixelRGBA r2 g2 b2 a2)= (PixelRGBA (alphablend r1 (r1*r2) a1 a2) (alphablend g1 (g1*g2) a1 a2) (alphablend b1 (b1*b2) a1 a2) (a2+a1*(1-a2)))
+
+
+screen (PixelRGBA r1 g1 b1 a1)  (PixelRGBA r2 g2 b2 a2)= (PixelRGBA (alphablend r1 (r1 + r2 - (r1*r2)) a1 a2) (alphablend g1 (g1 + g2 - (g1*g2)) a1 a2) (alphablend b1 (b1 + b2 - (b1*b2)) a1 a2) (a2+a1*(1-a2)))
+
+
+overlay a b = hardlight b a --testear esto con dos imagenes que tengan alpha
+
+
+darken (PixelRGBA r1 g1 b1 a1)  (PixelRGBA r2 g2 b2 a2)= (PixelRGBA (alphablend r1 (min r1 r2) a1 a2) (alphablend g1 (min g1 g2) a1 a2) (alphablend b1 (min b1 b2) a1 a2) (a2+a1*(1-a2)))
+
+
+lighten (PixelRGBA r1 g1 b1 a1)  (PixelRGBA r2 g2 b2 a2)= (PixelRGBA (alphablend r1 (max r1 r2) a1 a2) (alphablend g1 (max g1 g2) a1 a2) (alphablend b1 (max b1 b2) a1 a2) (a2+a1*(1-a2)))
+
+
+colordodge (PixelRGBA r1 g1 b1 a1)  (PixelRGBA r2 g2 b2 a2) = (PixelRGBA (alphablend r1 (f r1 r2) a1 a2) (alphablend g1 (f g1 g2) a1 a2) (alphablend b1 (f b1 b2) a1 a2) (a2+a1*(1-a2)))
+                                                              where f a b= if b==1 then 1 else min 1 (a/(1-b))
+
+
+colorburn (PixelRGBA r1 g1 b1 a1)  (PixelRGBA r2 g2 b2 a2) = (PixelRGBA (alphablend r1 (f r1 r2) a1 a2) (alphablend g1 (f g1 g2) a1 a2) (alphablend b1 (f b1 b2) a1 a2) (a2+a1*(1-a2)))
+                                                              where f a b= if b==0 then 0 else 1 - min 1 ((1-a)/b)
+
+
+hardlight (PixelRGBA r1 g1 b1 a1)  (PixelRGBA r2 g2 b2 a2) = (PixelRGBA (alphablend r1 (f r1 r2) a1 a2) (alphablend g1 (f g1 g2) a1 a2) (alphablend b1 (f b1 b2) a1 a2) (a2+a1*(1-a2)))
+                                                              where f a b= if (b <= 0.5) then a*2*b else a + 2*b-1 - (a*(2*b-1))
+
+
+softlight (PixelRGBA r1 g1 b1 a1)  (PixelRGBA r2 g2 b2 a2) = (PixelRGBA (alphablend r1 (f r1 r2) a1 a2) (alphablend g1 (f g1 g2) a1 a2) (alphablend b1 (f b1 b2) a1 a2) (a2+a1*(1-a2)))
+                                                              where f a b= if (b <= 0.5) then a - (1-2*b)*a*(1-a) else a + (2*b-1)*((d a) - a)
+                                                                           where d x = if (x>0.25) then sqrt x else ((16*x-12)*x+4)*x
+
+
+difference (PixelRGBA r1 g1 b1 a1)  (PixelRGBA r2 g2 b2 a2)= (PixelRGBA (alphablend r1 (abs (r1-r2)) a1 a2) (alphablend g1 (abs (g1-g2)) a1 a2) (alphablend b1 (abs (b1-b2)) a1 a2) (a2+a1*(1-a2)))
+
+
+exclusion (PixelRGBA r1 g1 b1 a1)  (PixelRGBA r2 g2 b2 a2)= (PixelRGBA (alphablend r1 (r1 + r2 -2*r1*r2) a1 a2) (alphablend g1 (g1 + g2 -2*g1*g2) a1 a2) (alphablend b1 (b1 + b2 -2*b1*b2) a1 a2) (a2+a1*(1-a2)))
+
+
+
+
+temp a d= a
+
+
+saturation a d= a
+
+
+multi a d= a
+
+
+power a d= a
+--pixel -> double -> pixel
+{-exposure c d = let x= if d<0 then d/3 else d
+                                  in  saturate(c * (x*(1-c))+1)--Esto esta mal, hay que hacer un fmap que solo afecte a los colores
+-}
+
+--Funciones de blending que se aplican en cada canal uniformemente
+
+normald a b = b
+
+addd a b= a+b
+
 --multiply::Double -> Double -> Double
-multiply a b = a*b
+multiplyd a b = a*b
 
 --screen::Double -> Double -> Double
-screen a b = a + b - (a*b)
+screend a b = a + b - (a*b)
 
 --overlay::Double -> Double -> Double
-overlay a b = hardlight b a
+overlayd a b = hardlightd b a
 
 --darken::Double -> Double -> Double
-darken a b = min a b
+darkend a b = min a b
 
 --lighten::Double -> Double -> Double
-lighten a b = max a b
+lightend a b = max a b
 
 --colordodge::Double -> Double -> Double
-colordodge a b = if b==1 then 1 else min 1 (a/(1-b))
+colordodged a b = if b==1 then 1 else min 1 (a/(1-b))
 
 --colorburn::Double -> Double -> Double
-colorburn a b = if b==0 then 0 else 1 - min 1 ((1-a)/b)
+colorburnd a b = if b==0 then 0 else 1 - min 1 ((1-a)/b)
 
-hardlight::Double -> Double -> Double
-hardlight a b = if (b <= 0.5) then multiply a 2*b else screen a 2*b-1
+hardlightd::Double -> Double -> Double
+hardlightd a b = if (b <= 0.5) then multiplyd a 2*b else screend a 2*b-1
 
 --softlight::Double -> Double -> Double
-softlight a b = if (b <= 0.5) then a - (1-2*b)*a*(1-a) else a + (2*b-1)*((d a) - a)
+softlightd a b = if (b <= 0.5) then a - (1-2*b)*a*(1-a) else a + (2*b-1)*((d a) - a)
                 where d x = if (x>0.25) then sqrt x else ((16*x-12)*x+4)*x
 
 --difference::Double -> Double -> Double
-difference a b = abs (a-b)
+differenced a b = abs (a-b)
 
 --exclusion::Double -> Double -> Double
-exclusion a b = a + b -2*a*b
+exclusiond a b = a + b -2*a*b
 
+hued= undefined
+luminosityd= undefined
 
-
-temp::Double -> Double -> Double
-temp a d= a
-
-saturation::Double -> Double -> Double
-saturation a d= a
-
-multi::Double -> Double -> Double
-multi a d= a
-
-power::Double -> Double -> Double
-power a d= a
+--opposited im = I.map (fmap opp) im
+--              where opp x= 1-x

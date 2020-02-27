@@ -57,18 +57,23 @@ instance Monad m => Applicative (ErrorMT m) where
     (<*>)  = ap
 
 
-
-
-
 --raise:: String ->ErrorMT m a
 raise s= ErrorMT (return (EM s))
 
+-- im2: foreground im1:background
+fmap2 (PixelRGBA r1 g1 b1 a1)  (PixelRGBA r2 g2 b2 a2) f = (PixelRGBA ((f (r1*a1*(1-a2)) (r2*a2))/(a2+a1*(1-a2))) ((f (g1*a1*(1-a2)) (g2*a2))/(a2+a1*(1-a2))) ((f (b1*a1*(1-a2)) (b2*a2))/(a2+a1*(1-a2)))  (a2+a1*(1-a2)))
 
-fmap2 (PixelRGB r1 g1 b1)  (PixelRGB r2 g2 b2) f = (PixelRGB (f r1 r2) (f g1 g2) (f b1 b2))
+--fmap2 (PixelRGB r1 g1 b1)  (PixelRGB r2 g2 b2) f = (PixelRGB (f r1 r2) (f g1 g2) (f b1 b2))
+
+{-fmap2 (PixelRGBA r1 g1 b1 a1)  (PixelRGBA r2 g2 b2 a2) f = let newa= (a1+(1-a2))--alpha resultante
+                                                           in let m= a1*(1-a2)
+                                                              in (PixelRGBA ((f (r1*m) r2)/m) ((f (g1*m) g2)/m) ((f (b1*m) b2)/m)  newa)
+-}
 
 --blend::(MArray arr RGB Double, Array arr1 RGB Double, Array arr1 RGB Double) =>Image arr RGB Double -> Image arr RGB Double -> ((Int, Int) -> Pixel RGB Double -> Pixel RGB Double)-> Image arr RGB Double
-blend::(MArray arr RGB t,Array arr1 RGB t,Array arr1 RGB e) => Image arr1 RGB t -> Image arr RGB t -> (t -> t -> e) -> Image arr1 RGB e --ATENCION: Estoy usando FlexibleContexts, sin setear eso en ghci se rompe
-blend im1 im2 f = I.imap (\(i,j) p1 -> fmap2 p1 (index im2 (i,j)) f) im1
+--blend::(MArray arr RGBA t,Array arr1 RGBA t,Array arr1 RGBA e) => Image arr1 RGBA t -> Image arr RGBA t -> (t -> t -> e) -> Image arr1 RGBA e --ATENCION: Estoy usando FlexibleContexts, sin setear eso en ghci se rompe
+blend im1 im2 f = I.imap (\(i,j) p1 -> f p1 (index im2 (i,j))) im1
+--blend im1 im2 f = I.imap (\(i,j) p1 -> fmap2 p1 (index im2 (i,j)) f) im1
 
 
 edit f im d= (I.map (fmap (f d)) im)
@@ -85,20 +90,25 @@ opposite im = (I.map (fmap (\x -> 1-x)) im)
 --eval t = evalTerm (conversion (fst (head t)))
 --eval (parsear "\\ x (Multiply x x)")
 
-
+--La salida se rompe cuando interactuas jpg con png
 eval t= let a= runErrorMT(evalTerm' (conversion (fst (head (parsear t)))))
             in a >>= (\i -> case i of
-                            JustE x -> writeImage "/home/nico/Desktop/output.jpg" x
+                            JustE x -> writeImage "/home/nico/Desktop/output.png" x
                             EM s -> print s)
 --eval "Darken I cluster.jpg I centaurus.jpg"
 
 evaldev t= let a= runErrorMT(evalTerm' t)
            in a >>= (\i -> case i of
-                            JustE x -> writeImage "/home/nico/Desktop/output.jpg" x
+                            JustE x -> writeImage "/home/nico/Desktop/output.png" x
                             EM s -> print s)
 
+-- Ejecuta un programa a partir de su archivo fuente
+--run :: [Char] -> IO ()
+run ifile = let a = readFile ifile
+            in a>>= eval
+
 --evaldev (BinOp Darken (IC "cluster.jpg") (IC "cluster.jpg"))
---ErrorMT IO (Image arr RGB Double)
+--ErrorMT IO (Image arr RGBA Double)
 
 -- conversion a términos localmente sin nombres
 conversion :: LamTerm -> Term
@@ -113,24 +123,24 @@ conversion' b (LBinOp f e1 e2) = BinOp f (conversion' b e1) (conversion' b e2) -
 conversion' b (LUnOp f e d) = UnOp f (conversion' b e) d --(convfu f)
 conversion' b (LComplement e) = Complement (conversion' b e)
 
-convfb :: Op -> (Double->Double->Double)
-convfb Normal      = normal
-convfb Add         = add
-convfb Diff        = difference
-convfb Darken      = darken
-convfb Lighten     = lighten
-convfb Multiply    = multiply
-convfb Screen      = screen
-convfb Overlay     = overlay
-convfb HardLight   = hardlight
-convfb SoftLight   = softlight
-convfb ColorDodge  = colordodge
-convfb ColorBurn   = colorburn
-convfb Hue         = hue
-convfb Luminosity  = luminosity
-convfb Exclusion   = exclusion
+--convfb :: Op -> (Double->Double->Double)
+convfb Normal      = blendpixel normald
+convfb Add         = blendpixel addd
+convfb Diff        = blendpixel differenced
+convfb Darken      = blendpixel darkend
+convfb Lighten     = blendpixel lightend
+convfb Multiply    = blendpixel multiplyd
+convfb Screen      = blendpixel screend
+convfb Overlay     = blendpixel overlayd
+convfb HardLight   = blendpixel hardlightd
+convfb SoftLight   = blendpixel softlightd
+convfb ColorDodge  = blendpixel colordodged
+convfb ColorBurn   = blendpixel colorburnd
+convfb Hue         = blendpixel hued
+convfb Luminosity  = blendpixel luminosityd
+convfb Exclusion   = blendpixel exclusiond
 
-convfu :: UOp -> (Double->Double->Double)
+--convfu :: UOp -> (Double->Double->Double)
 convfu Temp  = temp
 convfu Sat   = saturation
 convfu Multi = multi
@@ -156,7 +166,7 @@ sub i t (UnOp f e d)          = UnOp f (sub i t e) d
 sub i t (Complement e)        = Complement (sub i t e)
 
 
---IO (Image arr RGB Double) -> IO (ErrorM (Image arr RGB Double))
+--IO (Image arr RGBA Double) -> IO (ErrorM (Image arr RGBA Double))
 --liftIO (readimage)
 --evalTerm :: Term-> ErrorMT IO ()
 {-evalTerm t= let x = evalTerm' t
@@ -165,12 +175,12 @@ sub i t (Complement e)        = Complement (sub i t e)
 -}
 
 
---evalTerm' :: (Array arr1 RGB Double) => Term -> ErrorMT IO (Image arr RGB Double)
+--evalTerm' :: (Array arr1 RGBA Double) => Term -> ErrorMT IO (Image arr RGBA Double)
 evalTerm' (Bound _)  = raise "variable ligada inesperada en eval" --el return que usa deberia ser del IO
 evalTerm' (Free n)     = raise "variable libre"--fst $ fromJust $ lookup n e --para mi aca hay que poner un error
 evalTerm' (Lam t)      = raise "funcion sin termino para reemplazar en la variable"
 evalTerm' (Lam u :@: v) = evalTerm' (sub 0 v u)
-evalTerm' (IC dim) = ErrorMT (do x <- readImageRGB VU dim--Va a usar un >>= diferente? por que se esta metiendo con la monada IO y la de imagenes creo
+evalTerm' (IC dim) = ErrorMT (do x <- readImageRGBA VU dim--podria usar el isValid de la biblioteca de Path para revisar que la direccion sea valida y mandar un error
                                  return (JustE x))
 evalTerm' (BinOp f e1 e2) = (evalTerm' e1) >>= (\x -> (evalTerm' e2) >>= (\y -> if ((dims x) == (dims y)) then return (blend x y (convfb f)) else ErrorMT (return (EM "Las imagenes tienen dimensiones diferentes"))))--Como necesito los bind de IO para sacar las imagenes los return tienen que estar escritos asi
 evalTerm' (UnOp f e1 d) = (evalTerm' e1) >>= (\x -> return (edit (convfu f) x d))---es una funcion por que le falta pasar la imagen al final

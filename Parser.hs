@@ -53,6 +53,9 @@ floatParser = sat (\x -> (isDigit x) || (x=='.')) --podria mejorarse para que so
 directory :: Parser Char
 directory =  sat (\x -> (isAlphaNum x) || (x=='.') || (isPathSeparator x)) --No acepta direcciones con espacios, podria poner algo para limitarlo tipo <>
 
+directory2 :: Parser Char
+directory2 = sat (\x -> (x/='>'))
+
 bopParser = (do string "Normal"
                 return Normal)
             <|>(do string "Add"
@@ -125,7 +128,7 @@ parserLT =        (do char '\\' --hay que ver si me deja ver este caracter
                              <|>(do symbol "I"
                                     d <- many1 directory --chequear que creo que no le va a caer bien al evaluador
                                     space
-                                    return (LIC (show d)))
+                                    return (LIC d))
                                     <|>(do f <- bopParser
                                            space
                                            e1 <- parserLT
@@ -138,12 +141,14 @@ parserLT =        (do char '\\' --hay que ver si me deja ver este caracter
                                                    e1 <- parserLT
                                                    space
                                                    d <- many1 floatParser
+                                                   space
                                                    return (LUnOp f e1 (read d::Double)))
                                                    <|> (do symbol "Complement"
                                                            e <- parserLT
                                                            space
                                                            return (LComplement e))
                                                            <|> (do v <- many1 alphanum --los nombres de variables spueden ser alfanumericos (si llego aca significa que no va a guardar nada que no sea una variable?)
+                                                                   space
                                                                    return (LVar v))
                                                                    <|>(do char '('
                                                                           space
@@ -152,8 +157,8 @@ parserLT =        (do char '\\' --hay que ver si me deja ver este caracter
                                                                           char ')'
                                                                           space
                                                                           return e)
-test = do d <- item
-          return (show d)
+test = do d <- bopParser
+          return d
 -- /cluster.jpg
 
 ------------------------------------
@@ -165,8 +170,3 @@ parsear = parse parserLT
 {-main :: IO ()
 main = do arg:_ <- getArgs
           run arg-}
-
--- Ejecuta un programa a partir de su archivo fuente
---run :: [Char] -> IO ()
-run ifile = do s <- readFile ifile
-               return (parsear s)
