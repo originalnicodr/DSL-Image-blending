@@ -45,8 +45,10 @@ lis = makeTokenParser (emptyDef   { commentStart  = "/*"
 
 
 
-floatParser :: Parser Char --usar con many1
-floatParser = sat (\x -> (isDigit x) || (x=='.')) --podria mejorarse para que solo exista un punto
+floatParser :: Parser String --usar con many1
+floatParser = do x<-sat (\x -> (x=='-') || (isDigit x) || (x=='.')) --podria mejorarse para que solo exista un punto
+                 xs<-many (sat (\x -> (isDigit x) || (x=='.')))
+                 return (x:xs)
 
 
 
@@ -86,16 +88,32 @@ bopParser = (do string "Normal"
                                                                    return Luminosity)
                                                                 <|>(do string "Exclusion"
                                                                        return Exclusion)
+                                                                    <|>(do string "Color "--hace falta este espacio?
+                                                                           return BlendColor)
+                                                                        <|>(do string "BlendSaturation"
+                                                                               return BlendSat)
 
 uopParser :: Parser UOp
 uopParser =(do string "Temp"
                return Temp)
                 <|>(do string "Sat"
                        return Sat)
-                    <|>(do string "Multi"
-                           return Multi)
-                        <|> (do string "Power"
-                                return Power)
+                    <|>(do string "Vib"
+                           return Vib)
+                        <|>(do string "Exposure"
+                               return Exposure)
+                            <|>(do string "Contrast"
+                                   return Contrast)
+                                <|>(do string "Shadows"
+                                       return Shadows)
+                                    <|>(do string "Highlights"
+                                           return Highlights)
+                                        <|>(do string "Whites"
+                                               return Whites)
+                                            <|>(do string "Blacks"
+                                                   return Blacks)
+                                                <|>(do string "Opacity"
+                                                       return Opacity)
 
 
 --Lenguaje de escritura
@@ -140,7 +158,7 @@ parserLT =        (do char '\\' --hay que ver si me deja ver este caracter
                                                    space
                                                    e1 <- parserLT
                                                    space
-                                                   d <- many1 floatParser
+                                                   d <- floatParser
                                                    space
                                                    return (LUnOp f e1 (read d::Double)))
                                                    <|> (do symbol "Complement"

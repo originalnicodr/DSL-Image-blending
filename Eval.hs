@@ -76,7 +76,7 @@ blend im1 im2 f = I.imap (\(i,j) p1 -> f p1 (index im2 (i,j))) im1
 --blend im1 im2 f = I.imap (\(i,j) p1 -> fmap2 p1 (index im2 (i,j)) f) im1
 
 
-edit f im d= (I.map (fmap (f d)) im)
+edit f im d= (I.map (f d) im)
 
 opposite im = (I.map (fmap (\x -> 1-x)) im)
 
@@ -95,7 +95,9 @@ eval t= let a= runErrorMT(evalTerm' (conversion (fst (head (parsear t)))))
             in a >>= (\i -> case i of
                             JustE x -> writeImage "/home/nico/Desktop/output.png" x
                             EM s -> print s)
---eval "Darken I cluster.jpg I centaurus.jpg"
+--eval "Darken I cluster.jpg I pizza.png"
+--eval "App I cluster.jpg (\\ Darken x I centaurus.jpg)"
+
 
 evaldev t= let a= runErrorMT(evalTerm' t)
            in a >>= (\i -> case i of
@@ -136,16 +138,23 @@ convfb HardLight   = blendpixel hardlightd
 convfb SoftLight   = blendpixel softlightd
 convfb ColorDodge  = blendpixel colordodged
 convfb ColorBurn   = blendpixel colorburnd
-convfb Hue         = blendpixel hued
-convfb Luminosity  = blendpixel luminosityd
+convfb Hue         = hue
+convfb Luminosity  = luminosity
+convfb BlendColor  = blendcolor
+convfb BlendSat    = blendsat
 convfb Exclusion   = blendpixel exclusiond
 
 --convfu :: UOp -> (Double->Double->Double)
 convfu Temp  = temp
 convfu Sat   = saturation
-convfu Multi = multi
-convfu Power = power
-
+convfu Vib   = vib
+convfu Exposure = exposure
+convfu Contrast = contrast
+convfu Shadows = shadows
+convfu Highlights = highlights
+convfu Whites = whites
+convfu Blacks = blacks
+convfu Opacity = opacity
 
 --exatracti (IO (Image a r d)) = (Image a r d)
 
