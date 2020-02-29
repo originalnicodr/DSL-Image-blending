@@ -1,5 +1,5 @@
 --module Eval1 (eval) where
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleContexts,ViewPatterns #-}
 import Prelude as P
 import Graphics.Image as I
 import Common
@@ -9,6 +9,12 @@ import Control.Monad       (liftM, ap)
 import Control.Monad.IO.Class
 
 import Parser
+{-
+data Paramters = P {
+              output :: String,
+              eval :: String
+          } deriving(Show)
+p = P { output= "/home/nico/Desktop/output.png", eval= "Exact"}-}
 
 --Imports del SimplyTyped
 {-
@@ -56,9 +62,21 @@ instance Monad m => Applicative (ErrorMT m) where
     pure   = return
     (<*>)  = ap
 
-
 --raise:: String ->ErrorMT m a
 raise s= ErrorMT (return (EM s))
+
+
+--Para parametros opcionales
+
+{-
+(//) :: Maybe a -> a -> a
+Just x  // _ = x
+Nothing // y = y
+
+
+multiProduct req1 opt1 opt2 opt3 = req1 * (opt1 // 10) * (opt2 // 20) * (opt3 // 30)
+-}
+
 
 -- im2: foreground im1:background
 fmap2 (PixelRGBA r1 g1 b1 a1)  (PixelRGBA r2 g2 b2 a2) f = (PixelRGBA ((f (r1*a1*(1-a2)) (r2*a2))/(a2+a1*(1-a2))) ((f (g1*a1*(1-a2)) (g2*a2))/(a2+a1*(1-a2))) ((f (b1*a1*(1-a2)) (b2*a2))/(a2+a1*(1-a2)))  (a2+a1*(1-a2)))
@@ -95,14 +113,27 @@ eval t= let a= runErrorMT(evalTerm' (conversion (fst (head (parsear t)))))
             in a >>= (\i -> case i of
                             JustE x -> writeImage "/home/nico/Desktop/output.png" x
                             EM s -> print s)
+
+eval2 t= let a= runErrorMT(evalTerm'2 (conversion (fst (head (parsear t)))))
+            in a >>= (\i -> case i of
+                            JustE x -> writeImage "/home/nico/Desktop/output.png" x
+                            EM s -> print s)
+
+eval3 t= let a= runErrorMT(evalTerm'3 (conversion (fst (head (parsear t)))))
+            in a >>= (\i -> case i of
+                            JustE x -> writeImage "/home/nico/Desktop/output.png" x
+                            EM s -> print s)
 --eval "Darken I cluster.jpg I pizza.png"
 --eval "App I cluster.jpg (\\ Darken x I centaurus.jpg)"
 
+--eval2 "Normal I /home/nico/Desktop/F.png I pizza.png"
 
 evaldev t= let a= runErrorMT(evalTerm' t)
            in a >>= (\i -> case i of
                             JustE x -> writeImage "/home/nico/Desktop/output.png" x
                             EM s -> print s)
+
+--eval_dante_va_al_rio "Normal I dante.jpg I bacteria.png"
 
 -- Ejecuta un programa a partir de su archivo fuente
 --run :: [Char] -> IO ()
@@ -198,6 +229,47 @@ evalTerm' (Complement e)= (evalTerm' e) >>= (\x -> return (opposite x))--es apli
 
 
 
+--Otro evaluador que recorta la imagen mas grande sobre la mas chica
+
+evalTerm'2::Term->ErrorMT IO (Image VU RGBA Double)
+evalTerm'2 (Bound n)  = raise " es una variable ligada inesperada en eval" --el return que usa deberia ser del IO
+evalTerm'2 (Free n)     = raise "es una variable libre"--fst $ fromJust $ lookup n e --para mi aca hay que poner un error
+evalTerm'2 (Lam t)      = raise "funcion sin termino para reemplazar en la variable"
+evalTerm'2 (Lam u :@: v) = evalTerm'2 (sub 0 v u)
+evalTerm'2 (IC dim) = ErrorMT (do x <- readImageRGBA VU dim--podria usar el isValid de la biblioteca de Path para revisar que la direccion sea valida y mandar un error
+                                  return (JustE x))
+evalTerm'2 (BinOp f e1 e2) = (evalTerm'2 e1) >>= (\x -> (evalTerm'2 e2) >>= (\y -> if ((dims x) == (dims y)) then return (blend x y (convfb f)) else let (x',y')=auxet2 x y
+                                                                                                                                                      in return (blend x' y' (convfb f))))--Como necesito los bind de IO para sacar las imagenes los return tienen que estar escritos asi
+evalTerm'2 (UnOp f e1 d) = (evalTerm'2 e1) >>= (\x -> return (edit (convfu f) x d))---es una funcion por que le falta pasar la imagen al final
+evalTerm'2 (Complement e)= (evalTerm'2 e) >>= (\x -> return (opposite x))--es aplicar la funcion de doubles opposite a cada pixel de e'
+
+auxet2 x y= let (x1,x2)=dims x
+              in let (y1,y2)=dims y
+                  in if (x1>y1) then auxet2 (downsample (\a -> False) (\a -> (a<(div (x1-y1) 2)) || ((div (x1-y1) 2)>a)) x) y
+                                else if(x1<y1) then auxet2 x (downsample (\a -> False) (\a -> (a<(div (x1-y1) 2)) || ((div (x1-y1) 2)>a)) y)
+                                               else if (x2>y2) then auxet2 (downsample (\a -> (a<(div (x2-y2) 2)) || ((div (x2-y2) 2)>a)) (\a -> False) x) y
+                                                             else if(x2<y2) then auxet2 x (downsample (\a -> (a<(div (x2-y2) 2)) || ((div (x2-y2) 2)>a)) (\a -> False) y)
+                                                                            else (x,y)
+
+evalTerm'3::Term->ErrorMT IO (Image VU RGBA Double)
+evalTerm'3 (Bound n)  = raise " es una variable ligada inesperada en eval" --el return que usa deberia ser del IO
+evalTerm'3 (Free n)     = raise "es una variable libre"--fst $ fromJust $ lookup n e --para mi aca hay que poner un error
+evalTerm'3 (Lam t)      = raise "funcion sin termino para reemplazar en la variable"
+evalTerm'3 (Lam u :@: v) = evalTerm'2 (sub 0 v u)
+evalTerm'3 (IC dim) = ErrorMT (do x <- readImageRGBA VU dim--podria usar el isValid de la biblioteca de Path para revisar que la direccion sea valida y mandar un error
+                                  return (JustE x))
+evalTerm'3 (BinOp f e1 e2) = (evalTerm'2 e1) >>= (\x -> (evalTerm'2 e2) >>= (\y -> if ((dims x) == (dims y)) then return (blend x y (convfb f)) else let (x',y')=auxet3 x y
+                                                                                                                                                      in return (blend x' y' (convfb f))))--Como necesito los bind de IO para sacar las imagenes los return tienen que estar escritos asi
+evalTerm'3 (UnOp f e1 d) = (evalTerm'2 e1) >>= (\x -> return (edit (convfu f) x d))---es una funcion por que le falta pasar la imagen al final
+evalTerm'3 (Complement e)= (evalTerm'2 e) >>= (\x -> return (opposite x))--es aplicar la funcion de doubles opposite a cada pixel de e'
+
+auxet3 x y=let (x1,x2)=dims x
+            in let (y1,y2)=dims y
+                in if(x1<y1) then auxet3 (upsample (const (0, 0)) (\ k -> if (k == 0) then (div (y1-x1) 2, 0) else if (k==x1)then (0,div (y1-x1) 2) else (0, 0)) x) y
+                              else if(x1>y1) then auxet3 x (upsample (const (0, 0)) (\ k -> if (k == 0) then (div (x1-y1) 2, 0) else if (k==y1)then (0,div (x1-y1) 2) else (0, 0)) y)
+                                              else if(x2<y2) then auxet3 (upsample (\ k -> if (k == 0) then (div (y2-x2) 2, 0) else if (k==x2)then (0,div (y2-x2) 2) else (0, 0)) (const (0, 0)) x) y
+                                                              else if(x2>y2) then auxet3 x (upsample (\ k -> if (k == 0) then (div (x1-y1) 2, 0) else if (k==y2)then (0,div (x2-y2) 2) else (0, 0)) (const (0, 0)) y)
+                                                                              else (x,y)
 
 {-evalTerm (BinOp f e1 e2) = ErrorMT (do e1' <- runErrorMT (evalTerm e1)
                                        e2' <- runErrorMT (evalTerm e2)
