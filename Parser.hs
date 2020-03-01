@@ -20,7 +20,7 @@ import Control.Applicative hiding (many)
 import System.FilePath.Posix
 import System.Environment (getArgs)
 --import Parsing.lhs
-
+import Options
 
 -----------------------
 -- Funcion para facilitar el testing del parser.
@@ -173,7 +173,7 @@ uopParser =(do string "Temp"
 --I \direccion
 
 --parserLT:: Parser LamTerm --Voy a tener que cambiar lo que recibe para que sea mas lindo de escribir
-parserLT =        (do char '\\' --hay que ver si me deja ver este caracter
+parserLT =        (do symbol "Abs" --hay que ver si me deja ver este caracter
                       space
                       v <- many1 (sat isAlphaNum) --los nombres de variables spueden ser alfanumericos
                       space
@@ -210,11 +210,11 @@ parserLT =        (do char '\\' --hay que ver si me deja ver este caracter
                                                            <|> (do v <- many1 alphanum --los nombres de variables spueden ser alfanumericos (si llego aca significa que no va a guardar nada que no sea una variable?)
                                                                    space
                                                                    return (LVar v))
-                                                                   <|>(do char '('
+                                                                   <|>(do symbol "("
                                                                           space
                                                                           e <- parserLT
                                                                           space
-                                                                          char ')'
+                                                                          symbol ")"
                                                                           space
                                                                           return e)
 test = do d <- bopParser

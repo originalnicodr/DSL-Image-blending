@@ -9,6 +9,10 @@ import Control.Monad       (liftM, ap)
 import Control.Monad.IO.Class
 
 import Parser
+--Necesario para usar el programa compilado
+import Control.Applicative
+import Options --este lo tienen que instalar con cabal
+import System.Environment (getArgs, getProgName)
 {-
 data Paramters = P {
               output :: String,
@@ -109,23 +113,28 @@ opposite im = (I.map (fmap (\x -> 1-x)) im)
 --eval (parsear "\\ x (Multiply x x)")
 
 --La salida se rompe cuando interactuas jpg con png
-eval t= let a= runErrorMT(evalTerm' (conversion (fst (head (parsear t)))))
+eval' t= let a= runErrorMT(evalTerm' (conversion (fst (head (parsear t)))))
             in a >>= (\i -> case i of
                             JustE x -> writeImage "/home/nico/Desktop/output.png" x
                             EM s -> print s)
 
-eval2 t= let a= runErrorMT(evalTerm'2 (conversion (fst (head (parsear t)))))
+eval2' t= let a= runErrorMT(evalTerm'2 (conversion (fst (head (parsear t)))))
             in a >>= (\i -> case i of
                             JustE x -> writeImage "/home/nico/Desktop/output.png" x
                             EM s -> print s)
 
-eval3 t= let a= runErrorMT(evalTerm'3 (conversion (fst (head (parsear t)))))
+eval3' t= let a= runErrorMT(evalTerm'3 (conversion (fst (head (parsear t)))))
             in a >>= (\i -> case i of
                             JustE x -> writeImage "/home/nico/Desktop/output.png" x
                             EM s -> print s)
+
+
+
 --eval "Darken I cluster.jpg I pizza.png"
---eval "App I cluster.jpg (\\ Darken x I centaurus.jpg)"
-
+--eval "App (Abs x (Darken x I centaurus.jpg)) I cluster.jpg "
+--Abs x App x (Abs x (Darken x I centaurus.jpg)))
+--Abs x Abs y (Darken x y)
+--eval "Highlights cluster.jpg 1"
 --eval2 "Normal I /home/nico/Desktop/F.png I pizza.png"
 
 evaldev t= let a= runErrorMT(evalTerm' t)
@@ -133,12 +142,10 @@ evaldev t= let a= runErrorMT(evalTerm' t)
                             JustE x -> writeImage "/home/nico/Desktop/output.png" x
                             EM s -> print s)
 
---eval_dante_va_al_rio "Normal I dante.jpg I bacteria.png"
-
 -- Ejecuta un programa a partir de su archivo fuente
 --run :: [Char] -> IO ()
 run ifile = let a = readFile ifile
-            in a>>= eval
+            in a>>= eval'
 
 --evaldev (BinOp Darken (IC "cluster.jpg") (IC "cluster.jpg"))
 --ErrorMT IO (Image arr RGBA Double)
@@ -214,12 +221,12 @@ sub i t (Complement e)        = Complement (sub i t e)
                              in x))
 -}
 
-
 --evalTerm' :: (Array arr1 RGBA Double) => Term -> ErrorMT IO (Image arr RGBA Double)
 evalTerm' (Bound _)  = raise "variable ligada inesperada en eval" --el return que usa deberia ser del IO
 evalTerm' (Free n)     = raise "variable libre"--fst $ fromJust $ lookup n e --para mi aca hay que poner un error
 evalTerm' (Lam t)      = raise "funcion sin termino para reemplazar en la variable"
 evalTerm' (Lam u :@: v) = evalTerm' (sub 0 v u)
+evalTerm' (u :@: v) = raise "termino trabado: no se puede realizar la aplicacion"--ver que esto no me cague
 evalTerm' (IC dim) = ErrorMT (do x <- readImageRGBA VU dim--podria usar el isValid de la biblioteca de Path para revisar que la direccion sea valida y mandar un error
                                  return (JustE x))
 evalTerm' (BinOp f e1 e2) = (evalTerm' e1) >>= (\x -> (evalTerm' e2) >>= (\y -> if ((dims x) == (dims y)) then return (blend x y (convfb f)) else ErrorMT (return (EM "Las imagenes tienen dimensiones diferentes"))))--Como necesito los bind de IO para sacar las imagenes los return tienen que estar escritos asi
@@ -291,3 +298,88 @@ evalTerm (UnOp f e1 d) = do e1' <- evalTerm e1
                            case e1' of
                            EM s -> EM s
                            JustE x -> return (edit d x f)-}
+                           --
+
+data FileOptions = FileOptions
+   { fileApp :: String-- App (termino leido en el archivo) string a parsear
+     , fileDir :: String-- Direccion (ademas del nombre y la extension) en donde se guardara el archivos
+     , fileMode :: Int --Modo de evaluacion que utiliza para --exact/resizeup/resizedown
+     --podria separarse fileDir en nombre y etenxion como argumentos aparte
+   }
+
+instance Options FileOptions where
+   defineOptions = pure FileOptions
+       <*> simpleOption "exec" " "
+           "Si vas a realizar una aplicacion de un termino sobre lo leido en el archivo"
+       <*> simpleOption "d" "output.png"
+           "Direccion (ademas del nombre y la extension) en donde se guardara el archivos"
+       <*> simpleOption "m" 1
+           "Modo de evaluacion: 1 - Las imagenes que se usaran en funciones con dos argumentos necesitaran tener las mismas dimensiones\n                                 2 - Las imagenes aplicadas en funciones binarias daran una imagen resultante con el menor tamaño de ambas\n                                 3 - Las imagenes aplicadas en funciones binarias daran una imagen resultante con el mayor tamaño de ambas"
+
+
+data InterpetOptions = InterpetOptions
+   { iApp :: String-- App (termino leido en el archivo) string a parsear
+     , iDir :: String-- Direccion (ademas del nombre y la extension) en donde se guardara el archivos
+     , iMode :: Int --Modo de evaluacion que utiliza para --exact/resizeup/resizedown
+     --podria separarse fileDir en nombre y etenxion como argumentos aparte
+   }
+
+instance Options InterpetOptions where
+   defineOptions = pure InterpetOptions
+       <*> simpleOption "exec" " "
+           "Si vas a realizar una aplicacion de lo leido en un archivo sobre el termino"
+       <*> simpleOption "d" "output.png"
+           "Direccion (ademas del nombre y la extension) en donde se guardara el archivos"
+       <*> simpleOption "m" 1
+           "Modo de evaluacion: 1 - Las imagenes que se usaran en funciones con dos argumentos necesitaran tener las mismas dimensiones\n                                 2 - Las imagenes aplicadas en funciones binarias daran una imagen resultante con el menor tamaño de ambas\n                                 3 - Las imagenes aplicadas en funciones binarias daran una imagen resultante con el mayor tamaño de ambas"
+
+--Funciones de evaluacion para el main
+
+eval1 t s= let a= runErrorMT(evalTerm' (conversion (fst (head (parsear t)))))
+            in a >>= (\i -> case i of
+                            JustE x -> writeImage s x
+                            EM s -> print s)
+
+eval2 t s= let a= runErrorMT(evalTerm'2 (conversion (fst (head (parsear t)))))
+            in a >>= (\i -> case i of
+                            JustE x -> writeImage s x
+                            EM s -> print s)
+
+eval3 t s= let a= runErrorMT(evalTerm'3 (conversion (fst (head (parsear t)))))
+            in a >>= (\i -> case i of
+                            JustE x -> writeImage s x
+                            EM s -> print s)
+
+
+main :: IO ()
+main = do prog <- getProgName
+          args <- getArgs
+          if ((head args)=="i" || (head args)=="interpret") then main2 (head (tail args))
+                                                            else if ((head args)=="f" || (head args)=="file") then main3 (head (tail args))
+                                                                                                              else print "Error de argumentos"
+
+main2 :: String->IO ()
+main2 x= runCommand $ \opts args -> do
+           if ((fileApp opts)==" ") then case (fileMode opts) of
+                                   1 -> eval1 x (fileDir opts)
+                                   2 -> eval2 x (fileDir opts)
+                                   3 -> eval3 x (fileDir opts)
+                             else let a = readFile (fileApp opts)
+                                   in a>>= (\v ->case (fileMode opts) of
+                                                   1 -> eval1 ("App ("++x++") "++v) (fileDir opts)
+                                                   2 -> eval2 ("App ("++x++") "++v) (fileDir opts)
+                                                   3 -> eval3 ("App ("++x++") "++v) (fileDir opts))
+
+
+main3 :: String->IO ()
+main3 x= runCommand $ \opts args  -> do
+              let a = readFile x
+                in case iMode opts of
+                    1 -> a>>= (\v -> eval1 (if ((iApp opts)==" ") then v else "App ("++v++") "++(iApp opts)) (iDir opts))
+                    2 -> a>>= (\v -> eval2 (if ((iApp opts)==" ") then v else "App ("++v++") "++(iApp opts)) (iDir opts))
+                    3 -> a>>= (\v -> eval3 (if ((iApp opts)==" ") then v else "App ("++v++") "++(iApp opts)) (iDir opts))
+
+--runhaskell Eval.hs i "Darken I cluster.jpg I pizza.png"
+--runhaskell Eval.hs i "Darken I cluster.jpg I pizza.png" --d='/home/nico/Desktop/output.png'
+--runhaskell Eval.hs i "Abs x Screen x I pizza.png" --d='/home/nico/Desktop/output.png' --exec='test.f'
+--runhaskell Eval.hs f test2.f  --d='/home/nico/Desktop/output.png' --exec='I cluster.jpg'

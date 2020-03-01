@@ -224,7 +224,8 @@ color.xyz        = bri( color.xyz, brightness_m * weight_m );--1 neutro
 -}
 
 shadows d a=undefined
-highlights d c@(PixelRGBA r g b a)=rgbamap (\y -> if y>0.7 then y+d else y) c
+highlights d c@(PixelRGBA r g b a)= if (r>0.7 && g>0.7 && b>0.7)then (PixelRGBA (clamp (r*d)) (clamp(g*d)) (clamp(b*d)) a) else c
+--(PixelRGBA (clamp (r*d)) (clamp(g*d)) (clamp(b*d)) a)
 
 bri d a=rgbamap (\y -> clamp(d*y)) a
 --hace lo mismo (creo)
