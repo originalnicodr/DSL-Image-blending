@@ -118,6 +118,10 @@ eval' t= let a= runErrorMT(evalTerm' (conversion (fst (head (parsear t)))))
                             JustE x -> writeImage "/home/nico/Desktop/output.png" x
                             EM s -> print s)
 
+
+
+
+
 eval2' t= let a= runErrorMT(evalTerm'2 (conversion (fst (head (parsear t)))))
             in a >>= (\i -> case i of
                             JustE x -> writeImage "/home/nico/Desktop/output.png" x
@@ -130,7 +134,8 @@ eval3' t= let a= runErrorMT(evalTerm'3 (conversion (fst (head (parsear t)))))
 
 
 
---eval "Darken I cluster.jpg I pizza.png"
+--eval' "Darken <cluster.jpg> <pizza.png>"
+--eval' "Darken <cluster.jpg> </home/nico/Desktop/test   _'0'02835/pizza.png>"
 --eval "App (Abs x (Darken x I centaurus.jpg)) I cluster.jpg "
 --Abs x App x (Abs x (Darken x I centaurus.jpg)))
 --Abs x Abs y (Darken x y)
@@ -235,6 +240,19 @@ evalTerm' (Complement e)= (evalTerm' e) >>= (\x -> return (opposite x))--es apli
 
 
 
+--Funciones que recortan dos imagenes para que tengan el mismo tamaño
+checkx1 (a,b)= let (x1,y1)=dims a
+              in let (x2,y2)=dims b
+                  in if (x1>x2) then (downsample (\v -> (v<=(div (x1-x2) 2)) || (x2+(div (x1-x2) 2)<v)) (\v -> False) a, b)
+                                else if(x1<x2) then (a,downsample (\v -> (v<=(div (x2-x1) 2)) || (x1+(div (x2-x1) 2)<v)) (\v -> False)  b)
+                                               else (a,b)
+checky1 (a,b)= let (x1,y1)=dims a
+              in let (x2,y2)=dims b
+                  in if (y1>y2) then (downsample (\v -> False) (\v -> (v<=(div (y1-y2) 2)) || (y2+(div (y1-y2) 2)<v)) a, b)
+                                else if(y1<y2) then (a, downsample (\v -> False) (\v -> (v<=(div (y2-y1) 2)) || (y1+(div (y2-y1) 2)<v))  b)
+                                               else (a,b)
+
+cut x y=checky1 (checkx1 (x,y))
 
 --Otro evaluador que recorta la imagen mas grande sobre la mas chica
 
@@ -245,18 +263,26 @@ evalTerm'2 (Lam t)      = raise "funcion sin termino para reemplazar en la varia
 evalTerm'2 (Lam u :@: v) = evalTerm'2 (sub 0 v u)
 evalTerm'2 (IC dim) = ErrorMT (do x <- readImageRGBA VU dim--podria usar el isValid de la biblioteca de Path para revisar que la direccion sea valida y mandar un error
                                   return (JustE x))
-evalTerm'2 (BinOp f e1 e2) = (evalTerm'2 e1) >>= (\x -> (evalTerm'2 e2) >>= (\y -> if ((dims x) == (dims y)) then return (blend x y (convfb f)) else let (x',y')=auxet2 x y
+evalTerm'2 (BinOp f e1 e2) = (evalTerm'2 e1) >>= (\x -> (evalTerm'2 e2) >>= (\y -> if ((dims x) == (dims y)) then return (blend x y (convfb f)) else let (x',y')=cut x y
                                                                                                                                                       in return (blend x' y' (convfb f))))--Como necesito los bind de IO para sacar las imagenes los return tienen que estar escritos asi
 evalTerm'2 (UnOp f e1 d) = (evalTerm'2 e1) >>= (\x -> return (edit (convfu f) x d))---es una funcion por que le falta pasar la imagen al final
 evalTerm'2 (Complement e)= (evalTerm'2 e) >>= (\x -> return (opposite x))--es aplicar la funcion de doubles opposite a cada pixel de e'
 
-auxet2 x y= let (x1,x2)=dims x
-              in let (y1,y2)=dims y
-                  in if (x1>y1) then auxet2 (downsample (\a -> False) (\a -> (a<(div (x1-y1) 2)) || ((div (x1-y1) 2)>a)) x) y
-                                else if(x1<y1) then auxet2 x (downsample (\a -> False) (\a -> (a<(div (x1-y1) 2)) || ((div (x1-y1) 2)>a)) y)
-                                               else if (x2>y2) then auxet2 (downsample (\a -> (a<(div (x2-y2) 2)) || ((div (x2-y2) 2)>a)) (\a -> False) x) y
-                                                             else if(x2<y2) then auxet2 x (downsample (\a -> (a<(div (x2-y2) 2)) || ((div (x2-y2) 2)>a)) (\a -> False) y)
-                                                                            else (x,y)
+
+--Funciones que agrega pixeles invisibles a dos imagenes para que tengan el mismo tamaño
+checkx2 (a,b)= let (x1,y1)=dims a
+                in let (x2,y2)=dims b
+                    in if(x1<x2) then (I.imap (\(i,j) (PixelRGBA r1 g1 b1 a1) -> if (i<(div (x2-x1) 2)+1) || (i>(div (x2-x1) 2)+x1-1) then (PixelRGBA r1 g1 b1 0) else (PixelRGBA r1 g1 b1 a1)) (upsample (\ k -> if (k == 1) then (div (x2-x1) 2, 0) else if (k==x1-1)then (0,div (x2-x1) 2) else (0, 0)) (const (0, 0)) a), b)
+                             else if(x1>x2) then (a, I.imap (\(i,j) (PixelRGBA r1 g1 b1 a1) -> if (i<(div (x1-x2) 2)+1) || (i>(div (x1-x2) 2)+x2-1) then (PixelRGBA r1 g1 b1 0) else (PixelRGBA r1 g1 b1 a1)) (upsample (\ k -> if (k == 1) then (div (x1-x2) 2, 0) else if (k==x2-1)then (0,div (x1-x2) 2) else (0, 0)) (const (0, 0)) b))
+                                              else (a,b)
+
+checky2 (a,b)= let (x1,y1)=dims a
+                in let (x2,y2)=dims b
+                    in if(y1<y2) then (I.imap (\(i,j) (PixelRGBA r1 g1 b1 a1) -> if (j<(div (y2-y1) 2)+1) || (j>(div (y2-y1) 2)+y1-1) then (PixelRGBA r1 g1 b1 0) else (PixelRGBA r1 g1 b1 a1)) (upsample (const (0, 0)) (\ k -> if (k == 1) then (div (y2-y1) 2, 0) else if (k==y1-1)then (0,div (y2-y1) 2) else (0, 0)) a), b)
+                            else if(y1>y2) then (a, I.imap (\(i,j) (PixelRGBA r1 g1 b1 a1) -> if (j<(div (y1-y2) 2)+1) || (j>(div (y1-y2) 2)+y2-1) then (PixelRGBA r1 g1 b1 0) else (PixelRGBA r1 g1 b1 a1)) (upsample (const (0, 0)) (\ k -> if (k == 1) then (div (y1-y2) 2, 0) else if (k==y2-1)then (0,div (y1-y2) 2) else (0, 0)) b))
+                                           else (a,b)
+
+adjust x y= checkx2 (checky2 (x,y))
 
 evalTerm'3::Term->ErrorMT IO (Image VU RGBA Double)
 evalTerm'3 (Bound n)  = raise " es una variable ligada inesperada en eval" --el return que usa deberia ser del IO
@@ -265,18 +291,10 @@ evalTerm'3 (Lam t)      = raise "funcion sin termino para reemplazar en la varia
 evalTerm'3 (Lam u :@: v) = evalTerm'2 (sub 0 v u)
 evalTerm'3 (IC dim) = ErrorMT (do x <- readImageRGBA VU dim--podria usar el isValid de la biblioteca de Path para revisar que la direccion sea valida y mandar un error
                                   return (JustE x))
-evalTerm'3 (BinOp f e1 e2) = (evalTerm'2 e1) >>= (\x -> (evalTerm'2 e2) >>= (\y -> if ((dims x) == (dims y)) then return (blend x y (convfb f)) else let (x',y')=auxet3 x y
+evalTerm'3 (BinOp f e1 e2) = (evalTerm'2 e1) >>= (\x -> (evalTerm'2 e2) >>= (\y -> if ((dims x) == (dims y)) then return (blend x y (convfb f)) else let (x',y')=adjust x y
                                                                                                                                                       in return (blend x' y' (convfb f))))--Como necesito los bind de IO para sacar las imagenes los return tienen que estar escritos asi
 evalTerm'3 (UnOp f e1 d) = (evalTerm'2 e1) >>= (\x -> return (edit (convfu f) x d))---es una funcion por que le falta pasar la imagen al final
 evalTerm'3 (Complement e)= (evalTerm'2 e) >>= (\x -> return (opposite x))--es aplicar la funcion de doubles opposite a cada pixel de e'
-
-auxet3 x y=let (x1,x2)=dims x
-            in let (y1,y2)=dims y
-                in if(x1<y1) then auxet3 (upsample (const (0, 0)) (\ k -> if (k == 0) then (div (y1-x1) 2, 0) else if (k==x1)then (0,div (y1-x1) 2) else (0, 0)) x) y
-                              else if(x1>y1) then auxet3 x (upsample (const (0, 0)) (\ k -> if (k == 0) then (div (x1-y1) 2, 0) else if (k==y1)then (0,div (x1-y1) 2) else (0, 0)) y)
-                                              else if(x2<y2) then auxet3 (upsample (\ k -> if (k == 0) then (div (y2-x2) 2, 0) else if (k==x2)then (0,div (y2-x2) 2) else (0, 0)) (const (0, 0)) x) y
-                                                              else if(x2>y2) then auxet3 x (upsample (\ k -> if (k == 0) then (div (x1-y1) 2, 0) else if (k==y2)then (0,div (x2-y2) 2) else (0, 0)) (const (0, 0)) y)
-                                                                              else (x,y)
 
 {-evalTerm (BinOp f e1 e2) = ErrorMT (do e1' <- runErrorMT (evalTerm e1)
                                        e2' <- runErrorMT (evalTerm e2)
@@ -383,3 +401,7 @@ main3 x= runCommand $ \opts args  -> do
 --runhaskell Eval.hs i "Darken I cluster.jpg I pizza.png" --d='/home/nico/Desktop/output.png'
 --runhaskell Eval.hs i "Abs x Screen x I pizza.png" --d='/home/nico/Desktop/output.png' --exec='test.f'
 --runhaskell Eval.hs f test2.f  --d='/home/nico/Desktop/output.png' --exec='I cluster.jpg'
+
+--runhaskell Eval.hs i "Normal </home/nico/Desktop/F.png> <pizza.png>" --m='2' --d='preview'
+--runhaskell Eval.hs i "Contrast (Sat (Temp </home/nico/Desktop/vikshot.jpg> 3000) 0.5) 0.3"
+--runhaskell Eval.hs i "Contrast (Sat </home/nico/Desktop/vikshot.jpg> 0.5) 0.3" --d='output2.png'

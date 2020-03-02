@@ -76,7 +76,7 @@ opposite im = I.map (fmap opp) im
 
 
 
-fmap2 (PixelRGBA r1 g1 b1 a1)  (PixelRGBA r2 g2 b2 a2) f = (PixelRGBA (f r1 r2) (f g1 g2) (f b1 b2) a1)
+fmap2 (PixelRGBA r1 g1 b1 a1)  (PixelRGBA r2 g2 b2 a2) f = (PixelRGBA ((f (r1*a1*(1-a2)) (r2*a2))/(a2+a1*(1-a2))) ((f (g1*a1*(1-a2)) (g2*a2))/(a2+a1*(1-a2))) ((f (b1*a1*(1-a2)) (b2*a2))/(a2+a1*(1-a2)))  (a2+a1*(1-a2)))
 
 --blend::(MArray arr RGB Double, Array arr1 RGB Double, Array arr1 RGB Double) =>Image arr RGB Double -> Image arr RGB Double -> ((Int, Int) -> Pixel RGB Double -> Pixel RGB Double)-> Image arr RGB Double
 --blend::(MArray arr RGBA t,Array arr1 RGBA t,Array arr1 RGBA e) => Image arr1 RGBA t -> Image arr RGBA t -> (t -> t -> e) -> Image arr1 RGBA e --ATENCION: Estoy usando FlexibleContexts, sin setear eso en ghci se rompe
@@ -108,21 +108,21 @@ grad_colorm2=  I.imap (\(i,j) p1 -> fmap2 p1 (index grad_colorm (i,j)) normal) g
 
 checkx1 (a,b)= let (x1,y1)=dims a
               in let (x2,y2)=dims b
-                  in if (x1>x2) then (downsample (\a -> False) (\a -> (a<(div (x1-x2) 2)) || ((div (x1-x2) 2)>a)) a, b)
-                                else if(x1<x2) then (a,downsample (\a -> False) (\a -> (a<(div (x2-x1) 2)) || ((div (x2-x1) 2)>a)) b)
+                  in if (x1>x2) then (downsample (\v -> (v<=(div (x1-x2) 2)) || (x2+(div (x1-x2) 2)<v)) (\v -> False) a, b)
+                                else if(x1<x2) then (a,downsample (\v -> (v<=(div (x2-x1) 2)) || (x1+(div (x2-x1) 2)<v)) (\v -> False)  b)
                                                else (a,b)
 checky1 (a,b)= let (x1,y1)=dims a
               in let (x2,y2)=dims b
-                  in if (y1>y2) then (downsample (\a -> (a<(div (y1-y2) 2)) || ((div (y1-y2) 2)>a)) (\a -> False) a, b)
-                                else if(y1<y2) then (a, downsample (\a -> (a<(div (y2-y1) 2)) || ((div (y2-y1) 2)>a)) (\a -> False) b)
+                  in if (y1>y2) then (downsample (\v -> False) (\v -> (v<=(div (y1-y2) 2)) || (y2+(div (y1-y2) 2)<v)) a, b)
+                                else if(y1<y2) then (a, downsample (\v -> False) (\v -> (v<=(div (y2-y1) 2)) || (y1+(div (y2-y1) 2)<v))  b)
                                                else (a,b)
 
 
 main1= do
-        cluster <- readImageRGBA VU "cluster.jpg"
+        cluster <- readImageRGBA VU "pizza.png"
         simpson <- readImageRGBA VU "/home/nico/Desktop/F.png"
         writeImage "/home/nico/Desktop/test.jpg"  (let (x,y) = checky1 (checkx1 (cluster,simpson))
-                                                    in blend x y normal) --si queres ver la imagen tenes que ejecutar main
+                                                    in blend x y normal)--downsample (\v -> ((v<=90)||(v>=390))) (\v -> ((v<=170)||(v>=470)))  simpson) --si queres ver la imagen tenes que ejecutar main
 
 --I.imap (\(i,j) p1 -> fmap2 p1 (index im2 (i,j)) f) im1
 --if(div (x2-x1) 2)
@@ -130,24 +130,27 @@ main1= do
 
 checkx2 (a,b)= let (x1,y1)=dims a
                 in let (x2,y2)=dims b
-                    in if(x1<x2) then (upsample (const (0, 0)) (\ k -> if (k == 1) then (div (x2-x1) 2, 0) else if (k==x1-1)then (0,div (x2-x1) 2) else (0, 0)) a, b)
-                             else if(x1>x2) then (a, upsample (const (0, 0)) (\ k -> if (k == 1) then (div (x1-x2) 2, 0) else if (k==x2-1)then (0,div (x1-x2) 2) else (0, 0)) b)
+                    in if(x1<x2) then (I.imap (\(i,j) (PixelRGBA r1 g1 b1 a1) -> if (i<(div (x2-x1) 2)+1) || (i>(div (x2-x1) 2)+x1-1) then (PixelRGBA r1 g1 b1 0) else (PixelRGBA r1 g1 b1 a1)) (upsample (\ k -> if (k == 1) then (div (x2-x1) 2, 0) else if (k==x1-1)then (0,div (x2-x1) 2) else (0, 0)) (const (0, 0)) a), b)
+                             else if(x1>x2) then (a, I.imap (\(i,j) (PixelRGBA r1 g1 b1 a1) -> if (i<(div (x1-x2) 2)+1) || (i>(div (x1-x2) 2)+x2-1) then (PixelRGBA r1 g1 b1 0) else (PixelRGBA r1 g1 b1 a1)) (upsample (\ k -> if (k == 1) then (div (x1-x2) 2, 0) else if (k==x2-1)then (0,div (x1-x2) 2) else (0, 0)) (const (0, 0)) b))
                                               else (a,b)
 
 checky2 (a,b)= let (x1,y1)=dims a
                 in let (x2,y2)=dims b
-                    in if(y1<y2) then (upsample (\ k -> if (k == 1) then (div (y2-y1) 2, 0) else if (k==y1-1)then (0,div (y2-y1) 2) else (0, 0)) (const (0, 0)) a, b)
-                            else if(y1>y2) then (a, upsample (\ k -> if (k == 1) then (div (y1-y2) 2, 0) else if (k==y2-1)then (0,div (y1-y2) 2) else (0, 0)) (const (0, 0)) b)
+                    in if(y1<y2) then (I.imap (\(i,j) (PixelRGBA r1 g1 b1 a1) -> if (j<(div (y2-y1) 2)+1) || (j>(div (y2-y1) 2)+y1-1) then (PixelRGBA r1 g1 b1 0) else (PixelRGBA r1 g1 b1 a1)) (upsample (const (0, 0)) (\ k -> if (k == 1) then (div (y2-y1) 2, 0) else if (k==y1-1)then (0,div (y2-y1) 2) else (0, 0)) a), b)
+                            else if(y1>y2) then (a, I.imap (\(i,j) (PixelRGBA r1 g1 b1 a1) -> if (j<(div (y1-y2) 2)+1) || (j>(div (y1-y2) 2)+y2-1) then (PixelRGBA r1 g1 b1 0) else (PixelRGBA r1 g1 b1 a1)) (upsample (const (0, 0)) (\ k -> if (k == 1) then (div (y1-y2) 2, 0) else if (k==y2-1)then (0,div (y1-y2) 2) else (0, 0)) b))
                                            else (a,b)
 
+
+
+--I.imap (\(i,j) (PixelRGBA r1 g1 b1 a1) -> if (i<(div (x2-x1) 2)) || (i>(div (x2-x1) 2)+x1) then (PixelRGBA r1 g1 b1 0) else (PixelRGBA r1 g1 b1 a1))
 
 main2= do
         cluster <- readImageRGBA VU "cluster.jpg"
         simpson <- readImageRGBA VU "/home/nico/Desktop/F.png"
         --let (x,y) = checky2 (checkx2 (cluster,simpson))
         --  in print (dims y)
-        writeImage "/home/nico/Desktop/test.jpg"  (let (x,y) = checkx2 (checky2 (cluster,simpson))
-                                                    in y) --si queres ver la imagen tenes que ejecutar main
+        writeImage "/home/nico/Desktop/test.png"  (let (x,y) = checkx2 (checky2 (cluster,simpson))
+                                                    in blend y x normal) --si queres ver la imagen tenes que ejecutar main
 --(upsample (const (0, 0)) (\ k -> if (k == 1) then (5, 0) else if (k==snd (dims simpson)-1)then (0,5) else (0, 0))  simpson)
 
 --main= let grad_gray = makeImageR VU (200, 200) (\(i, j) -> PixelY (fromIntegral i) / 200 * (fromIntegral j) / 200)

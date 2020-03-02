@@ -185,8 +185,9 @@ parserLT =        (do symbol "Abs" --hay que ver si me deja ver este caracter
                              e2 <- parserLT
                              space
                              return (App e1 e2))
-                             <|>(do symbol "I"
-                                    d <- many1 directory --chequear que creo que no le va a caer bien al evaluador
+                             <|>(do symbol "<"
+                                    d <- many1 directory2 --chequear que creo que no le va a caer bien al evaluador
+                                    symbol ">"
                                     space
                                     return (LIC d))
                                     <|>(do f <- bopParser
@@ -217,8 +218,11 @@ parserLT =        (do symbol "Abs" --hay que ver si me deja ver este caracter
                                                                           symbol ")"
                                                                           space
                                                                           return e)
-test = do d <- bopParser
-          return d
+test = (do symbol "<"
+           d <- many1 directory2 --chequear que creo que no le va a caer bien al evaluador
+           symbol ">"
+           space
+           return (LIC d))
 -- /cluster.jpg
 
 ------------------------------------

@@ -19,7 +19,7 @@ instance Alternative Parser where
    (<|>) = mplus
 
 instance MonadPlus Parser where
-   mzero                      =  P (\_	 -> [])
+   mzero                      =  P (\_ -> [])
    p `mplus` q                =  P (\inp -> case parse p inp of
                                                []        -> parse q inp
                                                x         -> x)
@@ -91,13 +91,13 @@ space                         =  do many (sat isSpace)
 sepBy                         :: Parser a -> Parser sep -> Parser [a]
 sepBy p sep                   =  sepBy1 p sep <|> return []
 sepBy1                        :: Parser a -> Parser sep -> Parser [a]
-sepBy1 p sep        		= do{ x <- p
-                        	    ; xs <- many (sep >> p)
-                        	    ; return (x:xs) }
+sepBy1 p sep            = do{ x <- p
+                              ; xs <- many (sep >> p)
+                              ; return (x:xs) }
 endBy1                        :: Parser a -> Parser sep -> Parser [a]
 endBy1 p sep                  = many1 (do { x <- p; sep; return x })
 endBy                         :: Parser a -> Parser sep -> Parser [a]
-endBy p sep                   	= many (do{ x <- p; sep; return x })
+endBy p sep                   = many (do{ x <- p; sep; return x })
 
 
 
