@@ -1,4 +1,4 @@
-## DSL: Image blending #
+# DSL: Image blending #
 ## Idea general
 Se otorgará una estructura para representar una secuencia de edición sobre imágenes, permitiendo asi exportar una imagen resultante. Se hará uso de la biblioteca hip para el manejo de imágenes en haskell.
 ## Alcances
@@ -45,6 +45,46 @@ El modo 2 y 3 recortaran y aumentaran los tamaños de las imagenes de forma cent
 
 Alternativamente puede precindir de haskell compilando el programa con `ghc Eval.hs` y corriendo el ejecutable con los comandos anteriores utilizando './Eval' en lugar de 'runhaskell Eval.hs'.
 
+### Expresiones
+
+Las expresiones se basan en una combinacion de operaciones binarias y unarias de imagenes. Ademas se agrega el potencial del lambda calculo para definir funciones y variables.
+
+- Var: Variable.
+- Abs x y: Definicion de funcion 'y' en donde su variable es 'x'.
+- App x y: Aplicacion de la expresion 'x' en 'y' ('y' debe ser una funcion, caso contrario se devolvera un error)
+- '<'s'>': Lectura de una imagen, en donde s es una direccion relativa o absoluta de un archivo.
+- Op x y: 'Op' es una funcion binaria de blending que mezclara las imagenes resultantes de las expresiones 'x' e 'y'. Esto se interpreta como la imagen 'y' se aplica a la imagen 'x' con la operacion de blending 'Op'. A continuacion las funciones de blending disponibles:
+    - Normal: No aplicara ningun blending especial, solo mostrara la imagen 'y' por encima de la imagen 'x'.
+    - Add: Suma los valores de los canales RGB de las imagenes.
+    - Diff: Resta los valores de los canales RGB de las imagenes.
+    - Darken: Da como resultado el componente mas oscuro de cada canal entre dos imagenes.
+    - Lighten: Da como resultado el componente mas luminoso de cada canal entre dos imagenes.
+    - Multiply: Multiplica las componentes de las dos imagenes canal por canal. El efecto es comparable al de poner dos filminas una encima de la otra y projectarlas juntas. La luz, obligada a pasar por ambas filminas, es debilitada dos veces.
+    - Screen: Funcion de mezclado opuesta a 'Multiply', multiplica los opuestos de las imagenes. Esto es  `Screen x y = Multiply (Complement x) (Complement y)`
+    - Overlay: Si la componente del canal de 'x' es menor a 0.5, los valores tonales se multiplican, sino se aplicara la funcion de mezclado de 'screen' (despues de haber sido duplicados en ambos casos). 
+    - HardLight: Este modo corresponde realizar un mezclado con 'overlay' con las imagenes intercambiadas de lugar. `HardLight x y = Overlay y x`
+    - SoftLight: Similar a Overlay pero con efectos reducidos.
+    - ColorDodge: El brillo de la imagen 'y' "protege" a la imagen 'x' de exposicion.
+    - ColorBurn: El inverso de 'colordodge'. Es decir `ColorBurn x y= Complement (ColorDodge x y)`
+    - Hue: Da como resultado un pixel con el brillo y la saturacion de 'x' pero el color (hue) de 'y'.
+    - Luminosity: Da como resultado un pixel con el color y la saturacion de 'x' pero el brillo de 'y'.
+    - BlendColor: Da como resultado un pixel con el brillo de 'x' pero con el color (hue) y la saturacion de 'y'.
+    - BlendSat: Da como resultado un pixel con el color (hue) y el brillo de 'x' pero con la saturacion de 'y'.
+    - Exclusion: Un pixel brillants causan la inversion del otro pixel operando.
+
+        Modos simetricos: Add, Darken, Lighten, Multiply, Screen, Exclusion.
+        Como las funciones 'Screen', 'HardLight' y 'ColorBurn' pueden definirse a partir de otras funciones primitivas estas seran funciones derivadas.
+
+- UOp x d: 'Uop' es una funcion binaria que toma una imagen resultante de evaluar la expresion 'x' y un numero flotante 'd'. Las funciones disponibles son las siguientes:
+    - Temp: Modifica la temperatura de una imagen (es decir cambian el tono de la imagen hacia los azules o hacia los naranjas). El rango sugerido para el argumento flotante es [1000, 40000].
+    - Sat: Modifica la saturacion de una imagen. El rango sugerido para el argumento flotante es [0, 1].
+    - Exposure: Modifica la exposicion de una imagen. El rango sugerido para el argumento flotante es [-1, 1].
+    - Contrast: Modifica el contraste de una imagen. El rango sugerido para el argumento flotante es [-1, 1].
+    - Opacity: Modifica el canal alpha de una imagen (es decir su transparencia). El rango sugerido para el argumento flotante es [-1, 1].
+- Complement x: Invierte los colores de la imagen resultante de evaluar la expresion 'x'.
+
+
+
 ## Gramatica
 ```
 Exp ::=  Var
@@ -82,7 +122,30 @@ UOp = "Temp"
     | "Contrast"
     | "Opacity"
 ```
+## Distribucion de modulos
+
+A continuacion una breve descripcion de cada modulo:
+- Parser.hs: Contiene las funciones asociadas al parseo de terminos del lenguaje.
+- Common.hs: Contiene los tipos con los que se manejara el lenguaje, como asi tambien las funciones de mezclado y edicion.
+- Eval.hs: Contiene todas las funciones y monadas relacionadas a la evaluacion de terminos, como asi tambien los tipos y funciones necesarios para facilitar el uso del lenguaje compilado con sus argumentos opcionales.
+
 ## Desiciones de diseño
+
+Los modos de blending varian su implementacion entre documentaciones, por lo que los resultados pueden ser levemente diferentes a algunos software de edicion de imagenes.
+
+La implementacion de lambda calculo en el lenguaje me parecio necesaria ya que permite escribir archivos con funciones las cuales seran aplicadas con un input del usuario, facilitando asi la interaccion de un usuario con el lenguaje.
+
+Al utilizar una implementacion de imagenes proporcionado por la biblioteca hip me vi obligado a diseñar el lenguaje como "Deep embedding", que aunque no sea tan elegante como una implementacion de tipo "Shallow embedding" fue mas simple analizar y buscar errores mientras se desarrollaba.
+
+El tipo LamTerm tiene un tipo Op para poder mostrarse.
+
+La mayoria de las funciones de mezclado estan conformadas por una funcion que toma dos canales de dos imagenes y da un canal resultante y una funcion que permite la aplicacion de la funcion descrita en los canales de un pixel (y en ultima instancia, en toda la imagen). Se prefirio que esten definidas de esta manera ya que se puede observar muy facilmente que hace cada funcion del lenguaje con los canales de un pixel. Las funciones que no estan definidas de esta manera toman dos pixeles de dos imagenes y dan un pixel resultante; es necesario escribirlos de esta manera ya que se necesita realizar una conversion a otro espacio de colores, necesitando asi las 3 componentes de un pixel RGB. Lo mismo sucede con las funciones de edicion.
+
+Para la monada principal hice uso del concepto de "transformadores de monadas", que se basa en combinar los efectos de diferentes monadas. En mi caso necesitaba combinar una monada error con la monada IO. Dicha monada me permite, una vez realizado la evaluacion del termino, dar un resultado encapsulado en la monada IO () (ya sea teniendo una imagen resultado o un mensaje de error) necesario para que el resultado de la monada original se vea reflejado en la salida de la computadora. Fue necesario el uso de transformadores de monadas ya que la biblioteca de imagenes utilizada devuelve una imagen leida encapsulada en una monada IO, por lo cual definir una nueva monada que contenga los comportamientos de IO con una monada de error no era suficiente.
+
+Decidi utilizar una biblioteca para parsear argumentos opcionales por que creo que es de gran utilidad darle control al usuario de donde se guarda la imagen resultado (como asi tambien su nombre y su formato) entre otras posibilidades, apuntando de esta manera a facilitar el uso para usuarios que quieran mas control sobre lo que hace el lenguaje sin volverlo abrumador para un usuario que no esta familiarizado con el lenguaje.
+
+Se intento trabajar con imagenes con definicion de canales en Float en lugar de Double, pero como la lectura de imagenes y conversiones entre espacios de colores daban como resultado imagenes y pixeles con precision double, la constante conversion requerida para trabajar con las imagenes en precision Float daba como resultado una evaluacion mas lenta.
 
 ## Posibles mejoras
 Mas modos de edicion
@@ -91,7 +154,4 @@ Mas modos de edicion
 - https://github.com/prod80/prod80-ReShade-Repository
 - https://en.wikipedia.org/wiki/Alpha_compositing
 - https://www.adobe.com/content/dam/acom/en/devnet/pdf/pdf_reference_archive/blend_modes.pdf
-
-
-
-EDSL con Deep embedding
+- https://en.wikibooks.org/wiki/Haskell/Monad_transformers
