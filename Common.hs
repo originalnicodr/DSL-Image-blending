@@ -50,13 +50,13 @@ data Op = Normal
         | Diff
         | Darken
         | Lighten
-        | Multiply
+      --  | Multiply
         | Screen
         | Overlay
-        | HardLight
+      --  | HardLight
         | SoftLight
         | ColorDodge
-        | ColorBurn
+      --  | ColorBurn
         | Hue
         | Luminosity
         | BlendColor

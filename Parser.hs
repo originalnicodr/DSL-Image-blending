@@ -100,51 +100,51 @@ directory =  sat (\x -> (isAlphaNum x) || (x=='.') || (isPathSeparator x)) --No 
 directory2 :: Parser Char
 directory2 = sat (\x -> (x/='>'))
 
-bopParser = (do string "Normal"
-                return Normal)
-            <|>(do string "Add"
-                   return Add)
-                <|>(do string "Diff"
-                       return Diff)
-                    <|>(do string "ColorDodge"
-                           return ColorDodge)
-                        <|>(do string "ColorBurn"
-                               return ColorBurn)
-                            <|>(do string "Darken"
-                                   return Darken)
-                                <|>(do string "Lighten"
-                                       return Lighten)
-                                    <|>(do string "Multiply"
-                                           return Multiply)
-                                        <|>(do string "Screen"
-                                               return Screen)
-                                            <|>(do string "Overlay"
-                                                   return Overlay)
-                                                <|>(do string"HardLight"
-                                                       return HardLight)
-                                                    <|>(do string "SoftLight"
-                                                           return SoftLight)
-                                                        <|>(do string "Hue"
-                                                               return Hue)
-                                                            <|>(do string "Luminosity"
-                                                                   return Luminosity)
-                                                                <|>(do string "Exclusion"
-                                                                       return Exclusion)
-                                                                    <|>(do string "Color "--hace falta este espacio?
-                                                                           return BlendColor)
-                                                                        <|>(do string "BlendSaturation"
-                                                                               return BlendSat)
+bopParser = (do (string "Normal"<|> string "N")
+                return (\x y-> LBinOp Normal x y))
+            <|>(do (string "Add"<|> string "A")
+                   return (\x y-> LBinOp Add x y))
+                <|>(do (string "Diff"<|> string "Difference")
+                       return (\x y-> LBinOp Diff x y))
+                    <|>(do (string "ColorDodge"<|> string "CD")
+                           return (\x y-> LBinOp ColorDodge x y))
+                        <|>(do (string "ColorBurn"<|> string "CB")
+                               return (\x y-> LComplement (LBinOp ColorDodge x y)))--return (\x y-> LComplement ColorBurn x y))
+                            <|>(do (string "Darken"<|> string "D")
+                                   return (\x y-> LBinOp Darken x y))
+                                <|>(do (string "Lighten"<|> string "L")
+                                       return (\x y-> LBinOp Lighten x y))
+                                    <|>(do (string "Multiply"<|> string "M")
+                                           return (\x y->LBinOp Screen (LComplement x) (LComplement y)))--return (\x y-> LComplement Multiply x y))
+                                        <|>(do (string "Screen"<|> string "S")
+                                               return (\x y-> LBinOp Screen x y))
+                                            <|>(do (string "Overlay"<|> string "O")
+                                                   return (\x y-> LBinOp Overlay x y))
+                                                <|>(do (string"HardLight"<|> string "HL")
+                                                       return (\x y-> LBinOp Overlay y x))--return (\x y-> LBinOp HardLight x y))
+                                                    <|>(do (string "SoftLight"<|> string "SL")
+                                                           return (\x y-> LBinOp Normal x y))
+                                                        <|>(do (string "Hue"<|> string "H")
+                                                               return (\x y-> LBinOp Hue x y))
+                                                            <|>(do (string "Luminosity"<|>string "Lum")
+                                                                   return (\x y-> LBinOp Luminosity x y))
+                                                                <|>(do (string "Exclusion"<|> string "E")
+                                                                       return (\x y-> LBinOp Exclusion x y))
+                                                                    <|>(do (string "BlendColor"<|> string "C" <|> string "BC")
+                                                                           return (\x y-> LBinOp BlendColor x y))
+                                                                        <|>(do (string "BlendSaturation"<|> string "Saturation"<|> string "Sat" <|> string "BC")
+                                                                               return (\x y-> LBinOp BlendSat x y))
 
 uopParser :: Parser UOp
-uopParser =(do string "Temp"
+uopParser =(do (string "Temp"<|> string "Temperature"<|> string "T")
                return Temp)
-                <|>(do string "Sat"
+                <|>(do (string "Sat"<|> string "Saturation"<|> string "S")
                        return Sat)
-                    <|>(do string "Vib"
+                    <|>(do (string "Vib"<|> string "Vibrance"<|> string "V")
                            return Vib)
-                        <|>(do string "Exposure"
+                        <|>(do (string "Exposure"<|> string "Exp"<|> string "E")
                                return Exposure)
-                            <|>(do string "Contrast"
+                            <|>(do (string "Contrast"<|> string "Cont"<|> string "C")
                                    return Contrast)
                                 <|>(do string "Shadows"
                                        return Shadows)
@@ -154,7 +154,7 @@ uopParser =(do string "Temp"
                                                return Whites)
                                             <|>(do string "Blacks"
                                                    return Blacks)
-                                                <|>(do string "Opacity"
+                                                <|>(do (string "Opacity"<|> string "O")
                                                        return Opacity)
 
 
@@ -196,7 +196,7 @@ parserLT =        (do symbol "Abs" --hay que ver si me deja ver este caracter
                                            space
                                            e2 <- parserLT
                                            space
-                                           return (LBinOp f e1 e2))
+                                           return (f e1 e2))
                                            <|> (do f <- uopParser
                                                    space
                                                    e1 <- parserLT

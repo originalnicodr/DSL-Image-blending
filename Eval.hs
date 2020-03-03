@@ -30,6 +30,8 @@ import PrettyPrinter-}
 
 -- Para calmar al GHC
 
+--time runhaskell Eval.hs i "Overlay <centaurus.jpg> Multiply <cluster.jpg> ColorBurn <mouse.png> <pizza.png>" --d='/home/nico/Desktop/output.png'
+
 import Control.Monad.Trans.Class
 data ErrorM a = EM String | JustE a--chequear esto
 newtype ErrorMT m a = ErrorMT {runErrorMT :: m (ErrorM a) }
@@ -174,13 +176,13 @@ convfb Add         = blendpixel addd
 convfb Diff        = blendpixel differenced
 convfb Darken      = blendpixel darkend
 convfb Lighten     = blendpixel lightend
-convfb Multiply    = blendpixel multiplyd
+--convfb Multiply    = blendpixel multiplyd
 convfb Screen      = blendpixel screend
 convfb Overlay     = blendpixel overlayd
-convfb HardLight   = blendpixel hardlightd
+--convfb HardLight   = blendpixel hardlightd
 convfb SoftLight   = blendpixel softlightd
 convfb ColorDodge  = blendpixel colordodged
-convfb ColorBurn   = blendpixel colorburnd
+--convfb ColorBurn   = blendpixel colorburnd
 convfb Hue         = hue
 convfb Luminosity  = luminosity
 convfb BlendColor  = blendcolor
@@ -405,3 +407,23 @@ main3 x= runCommand $ \opts args  -> do
 --runhaskell Eval.hs i "Normal </home/nico/Desktop/F.png> <pizza.png>" --m='2' --d='preview'
 --runhaskell Eval.hs i "Contrast (Sat (Temp </home/nico/Desktop/vikshot.jpg> 3000) 0.5) 0.3"
 --runhaskell Eval.hs i "Contrast (Sat </home/nico/Desktop/vikshot.jpg> 0.5) 0.3" --d='output2.png'
+
+
+
+--runhaskell Eval.hs i "Normal <cluster.jpg> <pizza.png>" --d='/home/nico/Desktop/normal.png'
+--runhaskell Eval.hs i "Add <cluster.jpg> <pizza.png>" --d='/home/nico/Desktop/add.png'
+--runhaskell Eval.hs i "Diff <cluster.jpg> <pizza.png>" --d='/home/nico/Desktop/diff.png'
+--runhaskell Eval.hs i "Darken <cluster.jpg> <pizza.png>" --d='/home/nico/Desktop/darken.png'
+--runhaskell Eval.hs i "Lighten <cluster.jpg> <pizza.png>" --d='/home/nico/Desktop/lighten.png'
+--runhaskell Eval.hs i "Multiply <cluster.jpg> <pizza.png>" --d='/home/nico/Desktop/multiply.png'
+--runhaskell Eval.hs i "Screen <cluster.jpg> <pizza.png>" --d='/home/nico/Desktop/screen.png'
+--runhaskell Eval.hs i "Overlay <cluster.jpg> <pizza.png>" --d='/home/nico/Desktop/overlay.png'
+--runhaskell Eval.hs i "HardLight <cluster.jpg> <pizza.png>" --d='/home/nico/Desktop/hardlight.png'
+--runhaskell Eval.hs i "SoftLight <cluster.jpg> <pizza.png>" --d='/home/nico/Desktop/softlight.png'
+--runhaskell Eval.hs i "ColorDodge <cluster.jpg> <pizza.png>" --d='/home/nico/Desktop/colordodge.png'
+--runhaskell Eval.hs i "ColorBurn <cluster.jpg> <pizza.png>" --d='/home/nico/Desktop/colorburn.png'
+--runhaskell Eval.hs i "Hue <cluster.jpg> <pizza.png>" --d='/home/nico/Desktop/hue.png'
+--runhaskell Eval.hs i "Luminosity <cluster.jpg> <pizza.png>" --d='/home/nico/Desktop/luminosity.png'
+--runhaskell Eval.hs i "BlendColor <cluster.jpg> <pizza.png>" --d='/home/nico/Desktop/blendcolor.png'
+--runhaskell Eval.hs i "BlendSat <cluster.jpg> <pizza.png>" --d='/home/nico/Desktop/blendsat.png'
+--runhaskell Eval.hs i "Exclusion <cluster.jpg> <pizza.png>" --d='/home/nico/Desktop/exclusion.png'
