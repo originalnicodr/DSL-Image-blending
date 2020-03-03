@@ -137,7 +137,7 @@ La implementacion de lambda calculo en el lenguaje me parecio necesaria ya que p
 
 Al utilizar una implementacion de imagenes proporcionado por la biblioteca hip me vi obligado a diseñar el lenguaje como "Deep embedding", que aunque no sea tan elegante como una implementacion de tipo "Shallow embedding" fue mas simple analizar y buscar errores mientras se desarrollaba.
 
-El tipo LamTerm tiene un tipo Op para poder mostrarse.
+El tipo LamTerm tiene un tipo Op y un tipo UOp entre los argumentos de sus constructores. Estos hacen referencia a una funcion de blending y edicion respectivamente. Se opto por este enfoque en lugar de tener funciones de tipo (Double->Double->Double) como argumentos de los constructores para permitir su impresion en pantalla, facilitando asi la depuracion del lenguaje.
 
 La mayoria de las funciones de mezclado estan conformadas por una funcion que toma dos canales de dos imagenes y da un canal resultante y una funcion que permite la aplicacion de la funcion descrita en los canales de un pixel (y en ultima instancia, en toda la imagen). Se prefirio que esten definidas de esta manera ya que se puede observar muy facilmente que hace cada funcion del lenguaje con los canales de un pixel. Las funciones que no estan definidas de esta manera toman dos pixeles de dos imagenes y dan un pixel resultante; es necesario escribirlos de esta manera ya que se necesita realizar una conversion a otro espacio de colores, necesitando asi las 3 componentes de un pixel RGB. Lo mismo sucede con las funciones de edicion.
 
