@@ -7,7 +7,7 @@ El lenguaje puede ser utilizado por programas o aplicaciones como backend para e
 ## Dependencias
 Para poder utilizar el lengauje debera instalar las siguientes dependencias:
 
-GHC es el compilador e interprete de haskell, mientras que cabal es un instalador de paquetes de haskell. 
+GHC es el compilador e interprete de haskell, mientras que cabal es un instalador de paquetes de haskell.
 
 ```sudo apt install ghc```
 
@@ -60,8 +60,8 @@ Las expresiones se basan en una combinacion de operaciones binarias y unarias de
     - Darken: Da como resultado el componente mas oscuro de cada canal entre dos imagenes.
     - Lighten: Da como resultado el componente mas luminoso de cada canal entre dos imagenes.
     - Multiply: Multiplica las componentes de las dos imagenes canal por canal. El efecto es comparable al de poner dos filminas una encima de la otra y projectarlas juntas. La luz, obligada a pasar por ambas filminas, es debilitada dos veces.
-    - Screen: Funcion de mezclado opuesta a 'Multiply', multiplica los opuestos de las imagenes. Esto es  `Screen x y = Multiply (Complement x) (Complement y)`
-    - Overlay: Si la componente del canal de 'x' es menor a 0.5, los valores tonales se multiplican, sino se aplicara la funcion de mezclado de 'screen' (despues de haber sido duplicados en ambos casos). 
+    - Screen: Funcion de mezclado opuesta a 'Multiply', multiplica los opuestos de las imagenes. Esto es  `Screen x y = (Complement Multiply (Complement x) (Complement y))`
+    - Overlay: Si la componente del canal de 'x' es menor a 0.5, los valores tonales se multiplican, sino se aplicara la funcion de mezclado de 'screen' (despues de haber sido duplicados en ambos casos).
     - HardLight: Este modo corresponde realizar un mezclado con 'overlay' con las imagenes intercambiadas de lugar. `HardLight x y = Overlay y x`
     - SoftLight: Similar a Overlay pero con efectos reducidos.
     - ColorDodge: El brillo de la imagen 'y' "protege" a la imagen 'x' de exposicion.
@@ -149,6 +149,7 @@ Se intento trabajar con imagenes con definicion de canales en Float en lugar de 
 
 ## Posibles mejoras
 Mas modos de edicion
+Agregar soporte para gifs
 
 ## Bibliografia
 - https://github.com/prod80/prod80-ReShade-Repository

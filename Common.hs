@@ -50,13 +50,13 @@ data Op = Normal
         | Diff
         | Darken
         | Lighten
-      --  | Multiply
-        | Screen
+        | Multiply
+        | Screen--sacar
         | Overlay
-      --  | HardLight
+        | HardLight
         | SoftLight
         | ColorDodge
-      --  | ColorBurn
+        | ColorBurn--sacar
         | Hue
         | Luminosity
         | BlendColor
@@ -147,7 +147,7 @@ colordodged a b = if b==1 then 1 else min 1 (a/(1-b))
 colorburnd a b = if b==0 then 0 else 1 - min 1 ((1-a)/b)
 
 hardlightd::Double -> Double -> Double
-hardlightd a b = if (b <= 0.5) then multiplyd a 2*b else screend a 2*b-1
+hardlightd a b = if (b <= 0.5) then multiplyd a (clamp (2*b)) else screend a (clamp (2*b-1))
 
 --softlight::Double -> Double -> Double
 softlightd a b = if (b <= 0.5) then a - (1-2*b)*a*(1-a) else a + (2*b-1)*((d a) - a)
@@ -187,7 +187,7 @@ blendcolor a@(PixelRGBA r1 g1 b1 a1') b@(PixelRGBA r2 g2 b2 a2') = let PixelHSIA
 
 luminosity a@(PixelRGBA r1 g1 b1 a1') b@(PixelRGBA r2 g2 b2 a2') = let PixelHSIA h1 s1 i1 a1 = toPixelHSIA a
                                                                     in let PixelHSIA h2 s2 i2 a2 = toPixelHSIA b
-                                                                        in let PixelRGBA r g b a'= toPixelRGBA (PixelHSIA h1 s2 i2 a1)
+                                                                        in let PixelRGBA r g b a'= toPixelRGBA (PixelHSIA h1 s1 i2 a1)
                                                                             in PixelRGBA (r*a2+r1*a1*(1-a2)) (g*a2+g1*a1*(1-a2)) (b*a2+b1*a1*(1-a2)) (a2+a1*(1-a2))--Los calculos finales con alpha
 
 

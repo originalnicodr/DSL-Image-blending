@@ -102,7 +102,7 @@ blend im1 im2 f = I.imap (\(i,j) p1 -> f p1 (index im2 (i,j))) im1
 
 edit f im d= (I.map (f d) im)
 
-opposite im = (I.map (fmap (\x -> 1-x)) im)
+opposite im = (I.map ((\(PixelRGBA r g b a) -> (PixelRGBA (1-r) (1-g) (1-b) a))) im)
 
 
 --En estas funciones de blend, edit y opposite voy a estar usandolas con return para meterlas en el bind
@@ -117,7 +117,7 @@ opposite im = (I.map (fmap (\x -> 1-x)) im)
 --La salida se rompe cuando interactuas jpg con png
 eval' t= let a= runErrorMT(evalTerm' (conversion (fst (head (parsear t)))))
             in a >>= (\i -> case i of
-                            JustE x -> writeImage "/home/nico/Desktop/output.png" x
+                            JustE x -> displayImage x--writeImage "/home/nico/Desktop/output.png" x
                             EM s -> print s)
 
 
@@ -176,13 +176,13 @@ convfb Add         = blendpixel addd
 convfb Diff        = blendpixel differenced
 convfb Darken      = blendpixel darkend
 convfb Lighten     = blendpixel lightend
---convfb Multiply    = blendpixel multiplyd
+convfb Multiply    = blendpixel multiplyd
 convfb Screen      = blendpixel screend
 convfb Overlay     = blendpixel overlayd
---convfb HardLight   = blendpixel hardlightd
+convfb HardLight   = blendpixel hardlightd
 convfb SoftLight   = blendpixel softlightd
 convfb ColorDodge  = blendpixel colordodged
---convfb ColorBurn   = blendpixel colorburnd
+convfb ColorBurn   = blendpixel colorburnd
 convfb Hue         = hue
 convfb Luminosity  = luminosity
 convfb BlendColor  = blendcolor
@@ -357,17 +357,17 @@ instance Options InterpetOptions where
 
 eval1 t s= let a= runErrorMT(evalTerm' (conversion (fst (head (parsear t)))))
             in a >>= (\i -> case i of
-                            JustE x -> writeImage s x
+                            JustE x -> if s=="preview" then displayImage x else writeImage s x
                             EM s -> print s)
 
 eval2 t s= let a= runErrorMT(evalTerm'2 (conversion (fst (head (parsear t)))))
             in a >>= (\i -> case i of
-                            JustE x -> writeImage s x
+                            JustE x -> if s=="preview" then displayImage x else writeImage s x
                             EM s -> print s)
 
 eval3 t s= let a= runErrorMT(evalTerm'3 (conversion (fst (head (parsear t)))))
             in a >>= (\i -> case i of
-                            JustE x -> writeImage s x
+                            JustE x -> if s=="preview" then displayImage x else writeImage s x
                             EM s -> print s)
 
 
