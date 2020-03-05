@@ -91,6 +91,8 @@ data UOp = Temp --entre 1000 y 40000
            --deriving Show
 -}
 
+--Original
+{-
 data Term  = Bound Int
            | Free Name
            | Term :@: Term
@@ -100,7 +102,17 @@ data Term  = Bound Int
            | UnOp UOp Term Double
            | Complement Term
            deriving Show
+-}
 
+data Term  = Bound Int
+           | Free Name
+           | Term :@: Term
+           | Lam Term --No se pone la variable por que no es necesario, ya se guardo con las otras variables al realizar la conversion
+           | IC String --imagen A partir de aca esta lo que agregue (sigue igual que antes)
+           | BinOp (Pixel RGBA Double->Pixel RGBA Double->Pixel RGBA Double) Term Term
+           | UnOp (Double->Pixel RGBA Double->Pixel RGBA Double) Term Double
+           | Complement Term
+           --deriving Show
 
 
 -- Valores
