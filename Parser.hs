@@ -132,19 +132,19 @@ bopParser = (do (string "Normal"<|> string "N ")
                                                                        return (\x y-> LBinOp Exclusion x y))
                                                                     <|>(do (string "BlendColor"<|> string "C " <|> string "BC ")
                                                                            return (\x y-> LBinOp BlendColor x y))
-                                                                        <|>(do (string "BlendSaturation"<|> string "Saturation"<|> string "Sat " <|> string "BC ")
+                                                                        <|>(do (string "BlendSaturation"<|> string "BC ")
                                                                                return (\x y-> LBinOp BlendSat x y))
 
 uopParser :: Parser UOp
-uopParser =(do (string "Temp"<|> string "Temperature"<|> string "T ")
+uopParser =(do (string "Temp "<|> string "Temperature"<|> string "T ")
                return Temp)
-                <|>(do (string "Sat"<|> string "Saturation"<|> string "S ")
+                <|>(do (string "Sat "<|> string "Saturation"<|> string "S ")
                        return Sat)
-                    <|>(do (string "Vib"<|> string "Vibrance"<|> string "V ")
+                    <|>(do (string "Vib "<|> string "Vibrance"<|> string "V ")
                            return Vib)
-                        <|>(do (string "Exposure"<|> string "Exp"<|> string "E ")
+                        <|>(do (string "Exposure"<|> string "Exp ")
                                return Exposure)
-                            <|>(do (string "Contrast"<|> string "Cont"<|> string "C ")
+                            <|>(do (string "Contrast"<|> string "Cont ")
                                    return Contrast)
                                 <|>(do string "Shadows"
                                        return Shadows)
@@ -224,7 +224,7 @@ test = (do symbol "<"
            space
            return (LIC d))
 -- /cluster.jpg
-
+--parsear "(Contrast (Sat (Temp </home/nico/Desktop/vikshot.jpg> 3000) 3000) 3000)"
 ------------------------------------
 -- Función de parseo
 ------------------------------------

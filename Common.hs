@@ -109,8 +109,8 @@ data Term  = Bound Int
            | Term :@: Term
            | Lam Term --No se pone la variable por que no es necesario, ya se guardo con las otras variables al realizar la conversion
            | IC String --imagen A partir de aca esta lo que agregue (sigue igual que antes)
-           | BinOp (Pixel RGBA Double->Pixel RGBA Double->Pixel RGBA Double) Term Term
-           | UnOp (Double->Pixel RGBA Double->Pixel RGBA Double) Term Double
+           | BinOp Op Term Term--(Pixel RGBA Double->Pixel RGBA Double->Pixel RGBA Double) Term Term
+           | UnOp UOp Term Double--(Double->Pixel RGBA Double->Pixel RGBA Double) Term Double
            | Complement Term
            --deriving Show
 

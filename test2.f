@@ -1,1 +1,1 @@
-Abs x Screen x I pizza.png
+<pizza.png>

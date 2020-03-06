@@ -9,8 +9,9 @@ import Control.Monad       (liftM, ap)
 import Control.Monad.IO.Class
 
 import Parser
+import Parsing
 --Necesario para usar el programa compilado
-import Control.Applicative
+import Control.Applicative hiding(many)
 import Options --este lo tienen que instalar con cabal
 import System.Environment (getArgs, getProgName)
 {-
@@ -161,7 +162,7 @@ run ifile = let a = readFile ifile
 
 -- conversion a términos localmente sin nombres
 conversion :: LamTerm -> Term
-conversion = conversion' []
+conversion x= beta_red (conversion' [] x) 0
 
 --Con el Term original
 {-
@@ -180,8 +181,8 @@ conversion' b (LVar n)     = maybe (Free (Global n)) Bound (n `elemIndex` b)
 conversion' b (App t u)    = conversion' b t :@: conversion' b u
 conversion' b (Abs t u)  = Lam (conversion' (t:b) u)--hay que sacarle el tipado de aca
 conversion' b (LIC s) = IC s
-conversion' b (LBinOp f e1 e2) = BinOp (convfb f) (conversion' b e1) (conversion' b e2) --(convfb f)
-conversion' b (LUnOp f e d) = UnOp (convfu f) (conversion' b e) d --(convfu f)
+conversion' b (LBinOp f e1 e2) = BinOp f (conversion' b e1) (conversion' b e2) --(convfb f)
+conversion' b (LUnOp f e d) = UnOp f (conversion' b e) d --(convfu f)
 conversion' b (LComplement e) = Complement (conversion' b e)
 
 convfb :: Op -> (Pixel RGBA Double->Pixel RGBA Double->Pixel RGBA Double)
@@ -243,18 +244,28 @@ sub i t (Complement e)        = Complement (sub i t e)
 -}
 
 --evalTerm' :: (Array arr1 RGBA Double) => Term -> ErrorMT IO (Image arr RGBA Double)
-evalTerm' (Bound _)  = raise "variable ligada inesperada en eval" --el return que usa deberia ser del IO
-evalTerm' (Free n)     = raise "variable libre"--fst $ fromJust $ lookup n e --para mi aca hay que poner un error
-evalTerm' (Lam t)      = raise "funcion sin termino para reemplazar en la variable"
+evalTerm' (Bound _)  = raise "Variable ligada inesperada en eval" --el return que usa deberia ser del IO
+evalTerm' (Free n)     = raise ("Se identifico a "++(show n)++" como una variable libre, revise el termino ingresado")--fst $ fromJust $ lookup n e --para mi aca hay que poner un error
+evalTerm' (Lam t)      = raise "Funcion sin termino para reemplazar en la variable"
 evalTerm' (Lam u :@: v) = evalTerm' (sub 0 v u)
-evalTerm' (u :@: v) = raise "termino trabado: no se puede realizar la aplicacion"--ver que esto no me cague
+evalTerm' (u :@: v) = raise "Termino trabado: no se puede realizar la aplicacion"--ver que esto no me cague
 evalTerm' (IC dim) = ErrorMT (do x <- readImageRGBA VU dim--podria usar el isValid de la biblioteca de Path para revisar que la direccion sea valida y mandar un error
                                  return (JustE x))
-evalTerm' (BinOp f e1 e2) = (evalTerm' e1) >>= (\x -> (evalTerm' e2) >>= (\y -> if ((dims x) == (dims y)) then return (blend x y f) else ErrorMT (return (EM "Las imagenes tienen dimensiones diferentes"))))--Como necesito los bind de IO para sacar las imagenes los return tienen que estar escritos asi
-evalTerm' (UnOp f e1 d) = (evalTerm' e1) >>= (\x -> return (edit f x d))---es una funcion por que le falta pasar la imagen al final
+evalTerm' (BinOp f e1 e2) = (evalTerm' e1) >>= (\x -> (evalTerm' e2) >>= (\y -> if ((dims x) == (dims y)) then return (blend x y (convfb f)) else ErrorMT (return (EM "Las imagenes tienen dimensiones diferentes"))))--Como necesito los bind de IO para sacar las imagenes los return tienen que estar escritos asi
+evalTerm' (UnOp f e1 d) = (evalTerm' e1) >>= (\x -> return (edit (convfu f) x d))---es una funcion por que le falta pasar la imagen al final
 evalTerm' (Complement e)= (evalTerm' e) >>= (\x -> return (I.map opposite x))--es aplicar la funcion de doubles opposite a cada pixel de e'
 
-
+beta_red :: Term ->Int-> Term
+beta_red ((Lam t) :@: t') j = sub j t' t
+beta_red (Lam t) j = beta_red (Lam t) (j+1)
+beta_red (u :@: t) j = let res= beta_red u j
+                        in case res of
+                          Lam u' -> beta_red (res :@: (beta_red t j)) j
+                          x -> x :@: (beta_red t j)
+beta_red (BinOp f e1 e2) j = (BinOp f (beta_red e1 j) (beta_red e2 j))
+beta_red (UnOp f e d) j = UnOp f (beta_red e j) d
+beta_red (Complement e) j = Complement (beta_red e j)
+beta_red x j = x
 
 --Funciones que recortan dos imagenes para que tengan el mismo tamaño
 checkx1 (a,b)= let (x1,y1)=dims a
@@ -279,9 +290,9 @@ evalTerm'2 (Lam t)      = raise "funcion sin termino para reemplazar en la varia
 evalTerm'2 (Lam u :@: v) = evalTerm'2 (sub 0 v u)
 evalTerm'2 (IC dim) = ErrorMT (do x <- readImageRGBA VU dim--podria usar el isValid de la biblioteca de Path para revisar que la direccion sea valida y mandar un error
                                   return (JustE x))
-evalTerm'2 (BinOp f e1 e2) = (evalTerm'2 e1) >>= (\x -> (evalTerm'2 e2) >>= (\y -> if ((dims x) == (dims y)) then return (blend x y f) else let (x',y')=cut x y
-                                                                                                                                                      in return (blend x' y' f)))--Como necesito los bind de IO para sacar las imagenes los return tienen que estar escritos asi
-evalTerm'2 (UnOp f e1 d) = (evalTerm'2 e1) >>= (\x -> return (edit f x d))---es una funcion por que le falta pasar la imagen al final
+evalTerm'2 (BinOp f e1 e2) = (evalTerm'2 e1) >>= (\x -> (evalTerm'2 e2) >>= (\y -> if ((dims x) == (dims y)) then return (blend x y (convfb f)) else let (x',y')=cut x y
+                                                                                                                                                      in return (blend x' y' (convfb f))))--Como necesito los bind de IO para sacar las imagenes los return tienen que estar escritos asi
+evalTerm'2 (UnOp f e1 d) = (evalTerm'2 e1) >>= (\x -> return (edit (convfu f) x d))---es una funcion por que le falta pasar la imagen al final
 evalTerm'2 (Complement e)= (evalTerm'2 e) >>= (\x -> return (I.map opposite x))--es aplicar la funcion de doubles opposite a cada pixel de e'
 
 
@@ -307,9 +318,9 @@ evalTerm'3 (Lam t)      = raise "funcion sin termino para reemplazar en la varia
 evalTerm'3 (Lam u :@: v) = evalTerm'2 (sub 0 v u)
 evalTerm'3 (IC dim) = ErrorMT (do x <- readImageRGBA VU dim--podria usar el isValid de la biblioteca de Path para revisar que la direccion sea valida y mandar un error
                                   return (JustE x))
-evalTerm'3 (BinOp f e1 e2) = (evalTerm'2 e1) >>= (\x -> (evalTerm'2 e2) >>= (\y -> if ((dims x) == (dims y)) then return (blend x y f) else let (x',y')=adjust x y
-                                                                                                                                                      in return (blend x' y' f)))--Como necesito los bind de IO para sacar las imagenes los return tienen que estar escritos asi
-evalTerm'3 (UnOp f e1 d) = (evalTerm'2 e1) >>= (\x -> return (edit f x d))---es una funcion por que le falta pasar la imagen al final
+evalTerm'3 (BinOp f e1 e2) = (evalTerm'2 e1) >>= (\x -> (evalTerm'2 e2) >>= (\y -> if ((dims x) == (dims y)) then return (blend x y (convfb f)) else let (x',y')=adjust x y
+                                                                                                                                                      in return (blend x' y' (convfb f))))--Como necesito los bind de IO para sacar las imagenes los return tienen que estar escritos asi
+evalTerm'3 (UnOp f e1 d) = (evalTerm'2 e1) >>= (\x -> return (edit (convfu f) x d))---es una funcion por que le falta pasar la imagen al final
 evalTerm'3 (Complement e)= (evalTerm'2 e) >>= (\x -> return (I.map opposite x))--es aplicar la funcion de doubles opposite a cada pixel de e'
 
 {-evalTerm (BinOp f e1 e2) = ErrorMT (do e1' <- runErrorMT (evalTerm e1)
@@ -335,15 +346,15 @@ evalTerm (UnOp f e1 d) = do e1' <- evalTerm e1
                            --
 
 data FileOptions = FileOptions
-   { fileApp :: String-- App (termino leido en el archivo) string a parsear
-     , fileDir :: String-- Direccion (ademas del nombre y la extension) en donde se guardara el archivos
-     , fileMode :: Int --Modo de evaluacion que utiliza para --exact/resizeup/resizedown
+   { fApp :: String-- App (termino leido en el archivo) string a parsear
+     , fDir :: String-- Direccion (ademas del nombre y la extension) en donde se guardara el archivos
+     , fMode :: Int --Modo de evaluacion que utiliza para --exact/resizeup/resizedown
      --podria separarse fileDir en nombre y etenxion como argumentos aparte
    }
 
 instance Options FileOptions where
    defineOptions = pure FileOptions
-       <*> simpleOption "exec" " "
+       <*> simpleOption "exec" []
            "Si vas a realizar una aplicacion de un termino sobre lo leido en el archivo"
        <*> simpleOption "d" "output.png"
            "Direccion (ademas del nombre y la extension) en donde se guardara el archivos"
@@ -360,7 +371,7 @@ data InterpetOptions = InterpetOptions
 
 instance Options InterpetOptions where
    defineOptions = pure InterpetOptions
-       <*> simpleOption "exec" " "
+       <*> simpleOption "exec" []
            "Si vas a realizar una aplicacion de lo leido en un archivo sobre el termino"
        <*> simpleOption "d" "output.png"
            "Direccion (ademas del nombre y la extension) en donde se guardara el archivos"
@@ -392,26 +403,49 @@ main = do prog <- getProgName
                                                             else if ((head args)=="f" || (head args)=="file") then main3 (head (tail args))
                                                                                                               else print "Error de argumentos"
 
+addapp2 s xs=  case (parse (sepBy (many (sat (\v->v/=','))) (char ',')) xs) of
+                [(x,y)]-> addapp2' s x
+                [] -> addapp2' s []
+addapp2'::String->[String]->IO String
+addapp2' s []   = return s
+addapp2' s (x:xs) = let a= readFile x
+                    in a>>= (\v ->addapp2' ("App ("++s++") "++v) xs )
+
+
 main2 :: String->IO ()
 main2 x= runCommand $ \opts args -> do
-           if ((fileApp opts)==" ") then case (fileMode opts) of
-                                   1 -> eval1 x (fileDir opts)
-                                   2 -> eval2 x (fileDir opts)
-                                   3 -> eval3 x (fileDir opts)
-                             else let a = readFile (fileApp opts)
-                                   in a>>= (\v ->case (fileMode opts) of
-                                                   1 -> eval1 ("App ("++x++") "++v) (fileDir opts)
-                                                   2 -> eval2 ("App ("++x++") "++v) (fileDir opts)
-                                                   3 -> eval3 ("App ("++x++") "++v) (fileDir opts))
+                              let a=addapp2 x (fApp opts)
+                                in a>>= (\v ->case (fMode opts) of--(\v-> print v)
+                                              1 -> eval1 v (fDir opts)
+                                              2 -> eval2 v (fDir opts)
+                                              3 -> eval3 v (fDir opts))
 
+{-
+main2 :: String->IO ()
+main2 x= runCommand $ \opts args -> do
+           if ((fApp opts)==" ") then case (fMode opts) of
+                                   1 -> eval1 x (fDir opts)
+                                   2 -> eval2 x (fDir opts)
+                                   3 -> eval3 x (fDir opts)
+                             else let a = readFile (fApp opts)
+                                   in a>>= (\v ->case (fMode opts) of
+                                                   1 -> eval1 ("App ("++x++") "++v) (fDir opts)
+                                                   2 -> eval2 ("App ("++x++") "++v) (fDir opts)
+                                                   3 -> eval3 ("App ("++x++") "++v) (fDir opts))
+-}
+
+addapp s xs= addapp' s (fst(head(parse (sepBy (many (sat (\v->v/=','))) (char ',')) xs)))
+addapp'::String->[String]->String
+addapp' s (x:xs) = addapp' ("App ("++s++") "++x) xs
+addapp' s []   = s
 
 main3 :: String->IO ()
 main3 x= runCommand $ \opts args  -> do
-              let a = readFile x
-                in case iMode opts of
-                    1 -> a>>= (\v -> eval1 (if ((iApp opts)==" ") then v else "App ("++v++") "++(iApp opts)) (iDir opts))
-                    2 -> a>>= (\v -> eval2 (if ((iApp opts)==" ") then v else "App ("++v++") "++(iApp opts)) (iDir opts))
-                    3 -> a>>= (\v -> eval3 (if ((iApp opts)==" ") then v else "App ("++v++") "++(iApp opts)) (iDir opts))
+             let a = readFile x
+               in case fMode opts of
+                   1 -> a>>= (\v -> eval1 (addapp v (fApp opts)) (fDir opts)) --(\v -> print (addapp v (fApp opts)))--
+                   2 -> a>>= (\v -> eval2 (addapp v (fApp opts)) (fDir opts))
+                   3 -> a>>= (\v -> eval3 (addapp v (fApp opts)) (fDir opts))
 
 --runhaskell Eval.hs i "Darken I cluster.jpg I pizza.png"
 --runhaskell Eval.hs i "Darken I cluster.jpg I pizza.png" --d='/home/nico/Desktop/output.png'
@@ -421,6 +455,11 @@ main3 x= runCommand $ \opts args  -> do
 --runhaskell Eval.hs i "Normal </home/nico/Desktop/F.png> <pizza.png>" --m='2' --d='preview'
 --runhaskell Eval.hs i "Contrast (Sat (Temp </home/nico/Desktop/vikshot.jpg> 3000) 0.5) 0.3"
 --runhaskell Eval.hs i "Contrast (Sat </home/nico/Desktop/vikshot.jpg> 0.5) 0.3" --d='output2.png'
+
+--eval1 "App (App (Abs x (Abs y Normal x y))<pizza.png>) <cluster.jpg>"
+
+
+--runhaskell Eval.hs f testm.f  --d='/home/nico/Desktop/output.png' --exec='<pizza.png>, <cluster.jpg>'
 
 
 
@@ -441,3 +480,11 @@ main3 x= runCommand $ \opts args  -> do
 --runhaskell Eval.hs i "BlendColor <cluster.jpg> <pizza.png>" --d='/home/nico/Desktop/blendcolor.png'
 --runhaskell Eval.hs i "BlendSat <cluster.jpg> <pizza.png>" --d='/home/nico/Desktop/blendsat.png'
 --runhaskell Eval.hs i "Exclusion <cluster.jpg> <pizza.png>" --d='/home/nico/Desktop/exclusion.png'
+---------------------------------------------------------------------
+--Ver que pasa con estos casos
+-- *Parser> parsear "(Contrast (Sat (Temp </home/nico/Desktop/vikshot.jpg> 3000) 0.5) 0.3)"
+--[]
+-- *Parser> parsear "(Contrast (Sat (Temp </home/nico/Desktop/vikshot.jpg> 3000) 3000) 3000)"
+--[(LUnOp Contrast (LBinOp BlendSat (LUnOp Temp (LIC "/home/nico/Desktop/vikshot.jpg") 3000.0) (LVar "3000")) 3000.0,"")]
+
+--Si se quiere implementar catching de errores: http://hackage.haskell.org/package/enclosed-exceptions-1.0.3/docs/Control-Exception-Enclosed.html

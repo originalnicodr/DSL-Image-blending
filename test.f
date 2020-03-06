@@ -1,1 +1,1 @@
-Darken I cluster.jpg I centaurus.jpg
+Darken <cluster.jpg> <centaurus.jpg>
