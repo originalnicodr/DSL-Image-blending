@@ -45,7 +45,7 @@ El modo 2 y 3 recortan y aumentan los tamaños de las imágenes de forma centrad
 
 Alternativamente puede prescindir de haskell compilando el programa con `ghc Main.hs` y corriendo el ejecutable con los comandos anteriores utilizando './Main' en lugar de 'runhaskell Main.hs'.
 
-### Expresiones
+## Expresiones
 
 Las expresiones se basan en una combinación de operaciones binarias y unarias de imágenes. Además se agrega el potencial del lambda cálculo para definir funciones y variables.
 
@@ -85,7 +85,7 @@ Las expresiones se basan en una combinación de operaciones binarias y unarias d
 
 
 
-## Gramatica
+### Gramática
 ```
 Exp ::=  Var
       |  "Abs" String Exp
@@ -122,7 +122,7 @@ UOp = "Temp"
     | "Contrast"
     | "Opacity"
 ```
-## Distribucion de modulos
+## Distribución de modulos
 
 A continuación una breve descripción de cada módulo:
 - Parser.hs: Contiene las funciones asociadas al parseo de términos del lenguaje.
