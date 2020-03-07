@@ -33,7 +33,7 @@ Donde 'COMANDO' hace referencia a los siguientes caracteres:
 - f (file): Si lo que se busca es leer una expresion de un archivo se debera utilizar dicho comando en conjunto con el nombre del arhivo (puede escribirse una direccion relativa o absoluta) en lugar del termino "IMAGEN".
 
 Ademas de los comandos presentados se puede utilizar diferentes flags con configuraciones opcionales:
-- --exec='s': Permite aplicar la expresion leida a una imagen. Tenga en cuenta que la expresion parseada debe ser una funcion y que s correspondera a el nombre de un archivo o a una expresion dependiendo si se utilizo el comando i o f respectivamente.
+- --exec='s': Permite aplicar terminos argumentos a un termino leido. Tenga en cuenta que el termino parseado debe ser una funcion y que 's' correspondera a una serie de nombre de un archivo o expresiones dependiendo si se utilizo el comando i o f respectivamente (estos separados por comas).
 - --d='dir': Permite especificar la direccion en donde se guardara el archivo (relativa o absoluta) ademas del nombre y el formato de la imagen de salida. Se exportara el archivo como `output.png` de forma predeterminada en el directorio local.
 - --m='x': Permite elegir el modo de evaluacion. Estos son:
 
@@ -140,6 +140,8 @@ Al utilizar una implementacion de imagenes proporcionado por la biblioteca hip m
 El tipo LamTerm tiene un tipo Op y un tipo UOp entre los argumentos de sus constructores. Estos hacen referencia a una funcion de blending y edicion respectivamente. Se opto por este enfoque en lugar de tener funciones de tipo (Double->Double->Double) como argumentos de los constructores para permitir su impresion en pantalla, facilitando asi la depuracion del lenguaje.
 
 La mayoria de las funciones de mezclado estan conformadas por una funcion que toma dos canales de dos imagenes y da un canal resultante y una funcion que permite la aplicacion de la funcion descrita en los canales de un pixel (y en ultima instancia, en toda la imagen). Se prefirio que esten definidas de esta manera ya que se puede observar muy facilmente que hace cada funcion del lenguaje con los canales de un pixel. Las funciones que no estan definidas de esta manera toman dos pixeles de dos imagenes y dan un pixel resultante; es necesario escribirlos de esta manera ya que se necesita realizar una conversion a otro espacio de colores, necesitando asi las 3 componentes de un pixel RGB. Lo mismo sucede con las funciones de edicion.
+
+Las funciones de edicion reciben primero un Double y luego una imagen para facilitar su uso en la funcion de edit.
 
 Para la monada principal hice uso del concepto de "transformadores de monadas", que se basa en combinar los efectos de diferentes monadas. En mi caso necesitaba combinar una monada error con la monada IO. Dicha monada me permite, una vez realizado la evaluacion del termino, dar un resultado encapsulado en la monada IO () (ya sea teniendo una imagen resultado o un mensaje de error) necesario para que el resultado de la monada original se vea reflejado en la salida de la computadora. Fue necesario el uso de transformadores de monadas ya que la biblioteca de imagenes utilizada devuelve una imagen leida encapsulada en una monada IO, por lo cual definir una nueva monada que contenga los comportamientos de IO con una monada de error no era suficiente.
 
