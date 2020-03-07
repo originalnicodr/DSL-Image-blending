@@ -205,3 +205,9 @@ temp d c@(PixelRGBA r g b a) = let (PixelRGBA kr kg kb ka) = kelvinToRGBA d--ent
                                     in let (PixelRGBA br bg bb ba)=(PixelRGBA (r*kr) (g*kg) (b*kb) a)--blended
                                         in let (PixelHSIA hbr hbg hbb hba)=toPixelHSIA (PixelRGBA br bg bb ba)
                                             in (lerp (PixelRGBA br bg bb ba) (toPixelRGBA (PixelHSIA hbr hbg i hba)) 1)--se puede cambiar ese ultimo 1 por un
+
+
+--Funcion aplicada en Complement
+opposite::Pixel RGBA Double -> Pixel RGBA Double
+opposite= (\(PixelRGBA r g b a) -> (PixelRGBA (1-r) (1-g) (1-b) a))
+--opposite im = (I.map ((\(PixelRGBA r g b a) -> (PixelRGBA (1-r) (1-g) (1-b) a))) im)

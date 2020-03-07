@@ -1,1 +1,0 @@
-Darken <cluster.jpg> <centaurus.jpg>

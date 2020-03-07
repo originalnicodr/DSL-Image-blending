@@ -26,7 +26,7 @@ Options es una biblioteca de haskell para poder utilizar flags en parsers y hip 
 ## Manual de uso
 Para ejecutar el programa debe correr el siguiente comando
 
-```runhaskell Eval.hs COMANDO IMAGEN ```
+```runhaskell Main.hs COMANDO IMAGEN ```
 
 Donde 'COMANDO' hace referencia a los siguientes caracteres:
 - i (interpret): Si se desea escribir la expresion a evaluar en la terminal debe utilizar este comando. El termino "IMAGEN" por lo tanto sera una string con la expresion a evaluar.
@@ -43,7 +43,7 @@ Ademas de los comandos presentados se puede utilizar diferentes flags con config
 
 El modo 2 y 3 recortaran y aumentaran los tamaños de las imagenes de forma centrada.
 
-Alternativamente puede precindir de haskell compilando el programa con `ghc Eval.hs` y corriendo el ejecutable con los comandos anteriores utilizando './Eval' en lugar de 'runhaskell Eval.hs'.
+Alternativamente puede precindir de haskell compilando el programa con `ghc Main.hs` y corriendo el ejecutable con los comandos anteriores utilizando './Main' en lugar de 'runhaskell Main.hs'.
 
 ### Expresiones
 
@@ -127,7 +127,7 @@ UOp = "Temp"
 A continuacion una breve descripcion de cada modulo:
 - Parser.hs: Contiene las funciones asociadas al parseo de terminos del lenguaje.
 - Common.hs: Contiene los tipos con los que se manejara el lenguaje, como asi tambien las funciones de mezclado y edicion.
-- Eval.hs: Contiene todas las funciones y monadas relacionadas a la evaluacion de terminos, como asi tambien los tipos y funciones necesarios para facilitar el uso del lenguaje compilado con sus argumentos opcionales.
+- Main.hs: Contiene todas las funciones y monadas relacionadas a la evaluacion de terminos, como asi tambien los tipos y funciones necesarios para facilitar el uso del lenguaje compilado con sus argumentos opcionales. Se opto por poner los evaluadores y las funciones utilziadas en el programa compilado en un mismo archivo ya que se requeria el uso de la opcion de lenguaje de contextos flexibles, la cual no se habilita al utilizar el archivo como modulo.
 
 ## Desiciones de diseño
 
@@ -141,13 +141,15 @@ El tipo LamTerm tiene un tipo Op y un tipo UOp entre los argumentos de sus const
 
 La mayoria de las funciones de mezclado estan conformadas por una funcion que toma dos canales de dos imagenes y da un canal resultante y una funcion que permite la aplicacion de la funcion descrita en los canales de un pixel (y en ultima instancia, en toda la imagen). Se prefirio que esten definidas de esta manera ya que se puede observar muy facilmente que hace cada funcion del lenguaje con los canales de un pixel. Las funciones que no estan definidas de esta manera toman dos pixeles de dos imagenes y dan un pixel resultante; es necesario escribirlos de esta manera ya que se necesita realizar una conversion a otro espacio de colores, necesitando asi las 3 componentes de un pixel RGB. Lo mismo sucede con las funciones de edicion.
 
-Las funciones de edicion reciben primero un Double y luego una imagen para facilitar su uso en la funcion de edit.
+Se hizo uso de la opcion de lenguaje FlexibleContexts para "'"tranqulizar" a ghc y poder compilar.
 
 Para la monada principal hice uso del concepto de "transformadores de monadas", que se basa en combinar los efectos de diferentes monadas. En mi caso necesitaba combinar una monada error con la monada IO. Dicha monada me permite, una vez realizado la evaluacion del termino, dar un resultado encapsulado en la monada IO () (ya sea teniendo una imagen resultado o un mensaje de error) necesario para que el resultado de la monada original se vea reflejado en la salida de la computadora. Fue necesario el uso de transformadores de monadas ya que la biblioteca de imagenes utilizada devuelve una imagen leida encapsulada en una monada IO, por lo cual definir una nueva monada que contenga los comportamientos de IO con una monada de error no era suficiente.
 
 Decidi utilizar una biblioteca para parsear argumentos opcionales por que creo que es de gran utilidad darle control al usuario de donde se guarda la imagen resultado (como asi tambien su nombre y su formato) entre otras posibilidades, apuntando de esta manera a facilitar el uso para usuarios que quieran mas control sobre lo que hace el lenguaje sin volverlo abrumador para un usuario que no esta familiarizado con el lenguaje.
 
 Se intento trabajar con imagenes con definicion de canales en Float en lugar de Double, pero como la lectura de imagenes y conversiones entre espacios de colores daban como resultado imagenes y pixeles con precision double, la constante conversion requerida para trabajar con las imagenes en precision Float daba como resultado una evaluacion mas lenta.
+
+Las funciones de edicion reciben primero un Double y luego una imagen para facilitar su uso en la funcion de edit.
 
 ## Posibles mejoras
 Mas modos de edicion
