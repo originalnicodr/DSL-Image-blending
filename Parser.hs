@@ -1,13 +1,9 @@
 module Parser where
-
 import Common
 import Parsing
 import Data.Char
-import Control.Monad
 import Control.Applicative hiding (many)
-import System.FilePath.Posix
-import System.Environment (getArgs)
-import Options
+
 --Parser de numeros flotantes (no realiza verificacion necesaria, solo que los caracteres sean acordes a un flotante)
 floatParser :: Parser String
 floatParser = do x<-sat (\x -> (x=='-') || (isDigit x) || (x=='.')) --podria mejorarse para que solo exista un punto y un signo negativo
@@ -15,45 +11,45 @@ floatParser = do x<-sat (\x -> (x=='-') || (isDigit x) || (x=='.')) --podria mej
                  return (x:xs)
 
 --Parser utilizado para parsear de directorios (estos estaran entre los caracteres <>)
-directory2 :: Parser Char
-directory2 = sat (\x -> (x/='>'))
+directory :: Parser Char
+directory = sat (\x -> (x/='>'))
 
 --Parser de operaciones de tipo Op
-bopParser :: Parser (LamTerm -> LamTerm -> LamTerm)
+bopParser :: Parser Op
 bopParser = (do (string "Normal"<|> string "N ")
-                return (\x y-> LBinOp Normal x y))
+                return Normal)
             <|>(do (string "Add"<|> string "A ")
-                   return (\x y-> LBinOp Add x y))
+                   return Add)
                 <|>(do (string "Diff"<|> string "Difference ")
-                       return (\x y-> LBinOp Diff x y))
-                    <|>(do (string "ColorDodge"<|> string "CD ")
-                           return (\x y-> LBinOp ColorDodge x y))
-                        <|>(do (string "ColorBurn"<|> string "CB ")
-                               return (\x y-> LBinOp ColorBurn x y))--LComplement (LBinOp ColorDodge (LComplement x) (LComplement y))))--return (\x y-> LComplement ColorBurn x y))
+                       return Diff)
+                    <|>(do (string "ColorDodge"<|> string "CD "<|> string "Color Dodge")
+                           return ColorDodge)
+                        <|>(do (string "ColorBurn"<|> string "CB "<|> string "Color Burn")
+                               return ColorBurn)
                             <|>(do (string "Darken"<|> string "D ")
-                                   return (\x y-> LBinOp Darken x y))
+                                   return Darken)
                                 <|>(do (string "Lighten"<|> string "L ")
-                                       return (\x y-> LBinOp Lighten x y))
+                                       return Lighten)
                                     <|>(do (string "Multiply"<|> string "M ")
-                                           return (\x y->LBinOp Multiply x y))--Screen (LComplement x) (LComplement y)))--return (\x y-> LComplement Multiply x y))
+                                           return Multiply)
                                         <|>(do (string "Screen"<|> string "S ")
-                                               return (\x y-> LBinOp Screen x y))--LComplement (LBinOp Multiply (LComplement x) (LComplement y))))
+                                               return Screen)
                                             <|>(do (string "Overlay"<|> string "O ")
-                                                   return (\x y-> LBinOp Overlay x y))
-                                                <|>(do (string"HardLight"<|> string "HL ")
-                                                       return (\x y-> LBinOp HardLight x y))--return (\x y-> LBinOp HardLight x y))
-                                                    <|>(do (string "SoftLight"<|> string "SL ")
-                                                           return (\x y-> LBinOp SoftLight x y))
+                                                   return Overlay)
+                                                <|>(do (string"HardLight"<|> string "HL "<|> string "Hard Light")
+                                                       return HardLight)
+                                                    <|>(do (string "SoftLight"<|> string "SL "<|> string "Soft Light")
+                                                           return SoftLight)
                                                         <|>(do (string "Hue"<|> string "H ")
-                                                               return (\x y-> LBinOp Hue x y))
+                                                               return Hue)
                                                             <|>(do (string "Luminosity"<|>string "Lum ")
-                                                                   return (\x y-> LBinOp Luminosity x y))
+                                                                   return Luminosity)
                                                                 <|>(do (string "Exclusion"<|> string "E ")
-                                                                       return (\x y-> LBinOp Exclusion x y))
-                                                                    <|>(do (string "BlendColor"<|> string "C " <|> string "BC ")
-                                                                           return (\x y-> LBinOp BlendColor x y))
-                                                                        <|>(do (string "BlendSaturation"<|> string "BC ")
-                                                                               return (\x y-> LBinOp BlendSat x y))
+                                                                       return Exclusion)
+                                                                    <|>(do (string "BlendColor"<|> string "C " <|> string "BC "<|> string "Blend Color")
+                                                                           return BlendColor)
+                                                                        <|>(do (string "BlendSaturation"<|> string "BC "<|> string "Blend Saturation"<|>string "BlendSat")
+                                                                               return BlendSat)
 
 --Parser de operaciones de tipo UOp
 uopParser :: Parser UOp
@@ -61,22 +57,16 @@ uopParser =(do (string "Temp "<|> string "Temperature"<|> string "T ")
                return Temp)
                 <|>(do (string "Sat "<|> string "Saturation"<|> string "S ")
                        return Sat)
-                    <|>(do (string "Vib "<|> string "Vibrance"<|> string "V ")
-                           return Vib)
-                        <|>(do (string "Exposure"<|> string "Exp ")
-                               return Exposure)
-                            <|>(do (string "Contrast"<|> string "Cont ")
-                                   return Contrast)
-                                <|>(do string "Shadows"
-                                       return Shadows)
-                                    <|>(do string "Highlights"
-                                           return Highlights)
-                                        <|>(do string "Whites"
-                                               return Whites)
-                                            <|>(do string "Blacks"
-                                                   return Blacks)
-                                                <|>(do (string "Opacity"<|> string "O ")
-                                                       return Opacity)
+                    <|>(do (string "Exposure"<|> string "Exp ")
+                           return Exposure)
+                        <|>(do (string "Contrast"<|> string "Cont ")
+                               return Contrast)
+                            <|>(do string "Shadows"
+                                   return Shadows)
+                                <|>(do string "Highlights"
+                                       return Highlights)
+                                    <|>(do (string "Opacity"<|> string "O ")
+                                           return Opacity)
 
 --Parser de Terminos
 parserLT:: Parser LamTerm
@@ -93,7 +83,7 @@ parserLT =        (do symbol "Abs"
                              space
                              return (App e1 e2))
                              <|>(do symbol "<"
-                                    d <- many1 directory2
+                                    d <- many1 directory
                                     symbol ">"
                                     space
                                     return (LIC d))
@@ -103,7 +93,7 @@ parserLT =        (do symbol "Abs"
                                            space
                                            e2 <- parserLT
                                            space
-                                           return (f e1 e2))
+                                           return (LBinOp f e1 e2))
                                            <|> (do f <- uopParser
                                                    space
                                                    e1 <- parserLT
@@ -128,5 +118,5 @@ parserLT =        (do symbol "Abs"
 ------------------------------------
 -- Función de parseo
 ------------------------------------
---parseComm :: SourceName -> String -> Either ParseError LamTerm
+parsear :: String -> [(LamTerm, String)]
 parsear = parse parserLT

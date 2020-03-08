@@ -29,11 +29,11 @@ Para ejecutar el programa debe correr el siguiente comando
 ```runhaskell Main.hs COMANDO IMAGEN ```
 
 Donde 'COMANDO' hace referencia a los siguientes caracteres:
-- i (interpret): Si se desea escribir la expresion a evaluar en la terminal debe utilizar este comando. El término "IMAGEN" por lo tanto será una string con la expresión a evaluar.
+- i (interpret): Si se desea escribir el termino a evaluar en la terminal debe utilizar este comando. El término "IMAGEN" por lo tanto será una string con la expresión a evaluar.
 - f (file): Si lo que se busca es leer una expresión de un archivo se deberá utilizar dicho comando en conjunto con el nombre del archivo (puede escribirse una dirección relativa o absoluta) en lugar del término "IMAGEN".
 
 Además de los comandos presentados se puede utilizar diferentes flags con configuraciones opcionales:
-- --exec='s': Permite aplicar términos argumentos a un término leído. Tenga en cuenta que el término parseado debe ser una función y que 's' corresponde a una serie de nombre de un archivo o expresiones dependiendo si se utilizó el comando i o f respectivamente (estos separados por comas).
+- --exec='s': Permite aplicar términos argumentos a un término leído. Tenga en cuenta que el término parseado debe ser una función y que 's' corresponde a una serie de nombre de un archivo o terminos dependiendo si se utilizó el comando i o f respectivamente (estos separados por comas).
 - --d='dir': Permite especificar la dirección en donde se guardará el archivo (relativa o absoluta) además del nombre y el formato de la imagen de salida. Se exportará el archivo como `output.png` de forma predeterminada en el directorio local.
 - --m='x': Permite elegir el modo de evaluación. Estos son:
 
@@ -45,15 +45,15 @@ El modo 2 y 3 recortan y aumentan los tamaños de las imágenes de forma centrad
 
 Alternativamente puede prescindir de haskell compilando el programa con `ghc Main.hs` y corriendo el ejecutable con los comandos anteriores utilizando './Main' en lugar de 'runhaskell Main.hs'.
 
-## Expresiones
+## Terminos
 
-Las expresiones se basan en una combinación de operaciones binarias y unarias de imágenes. Además se agrega el potencial del lambda cálculo para definir funciones y variables.
+Los Terminos se basan en una combinación de operaciones binarias y unarias de imágenes. Además se agrega el potencial del lambda cálculo para definir funciones y variables.
 
 - Var: Variable.
 - Abs x y: Definicion de funcion 'y' en donde su variable es 'x'.
 - App x y: Aplicación de la expresión 'x' en 'y' ('y' debe ser una función, caso contrario se devolverá un error)
 - '<'s'>': Lectura de una imagen, en donde s es una dirección relativa o absoluta de un archivo.
-- Op x y: 'Op' es una función binaria de blending que mezclara las imágenes resultantes de las expresiones 'x' e 'y'. Esto se interpreta como la imagen 'y' se aplica a la imagen 'x' con la operación de blending 'Op'. A continuación las funciones de blending disponibles:
+- Op x y: 'Op' es una función binaria de blending que mezclara las imágenes resultantes de los terminos 'x' e 'y'. Esto se interpreta como la imagen 'y' se aplica a la imagen 'x' con la operación de blending 'Op'. A continuación las funciones de blending disponibles:
     - Normal: No aplica ningún blending especial, solo mostrará la imagen 'y' por encima de la imagen 'x'.
     - Add: Suma los valores de los canales RGB de las imágenes.
     - Diff: Resta los valores de los canales RGB de las imágenes.
@@ -73,14 +73,27 @@ Las expresiones se basan en una combinación de operaciones binarias y unarias d
     - Exclusion: Un pixel brillante causa la inversión del otro pixel operando.
 
         Modos simetricos: Add, Darken, Lighten, Multiply, Screen, Exclusion.
-        Como las funciones 'Screen', 'HardLight' y 'ColorBurn' pueden definirse a partir de otras funciones primitivas estas serán funciones derivadas.
+        Argumentos neutros de las operaciones:
+          Normal: Imagen transparente (RGBA=(-,-,-,0) en todos los pixeles)
+          Add: Imagen de color negro (RGBA=(0,0,0,-) en todos los pixeles)
+          Multiply: Imagen de color blanco (RGBA=(1,1,1,-) en todos los pixeles)
+          Screen: Imagen de color negro (RGBA=(0,0,0,-) en todos los pixeles)
+          Exclusion: Imagen de color negro (RGBA=(0,0,0,-) en todos los pixeles)
+
+          Overlay/HardLight: Imagen de color gris (RGBA=(0.5,0.5,0.5,-) en todos los pixeles)
+          ColorDodge/ColorBurn: Imagen de color negro (RGBA=(0,0,0,-) en todos los pixeles)
 
 - UOp x d: 'Uop' es una función binaria que toma una imagen resultante de evaluar la expresión 'x' y un número flotante 'd'. Las funciones disponibles son las siguientes:
     - Temp: Modifica la temperatura de una imagen (es decir cambian el tono de la imagen hacia los azules o hacia los naranjas). El rango sugerido para el argumento flotante es [1000, 40000].
-    - Sat: Modifica la saturación de una imagen. El rango sugerido para el argumento flotante es [0, 1].
-    - Exposure: Modifica la exposición de una imagen. El rango sugerido para el argumento flotante es [-1, 1].
+    - Sat: Modifica la saturación de una imagen. El rango sugerido para el argumento flotante es [-1, 1].
+    - Exposure: Modifica la exposición de una imagen. El rango sugerido para el argumento flotante es [-1, 4].
     - Contrast: Modifica el contraste de una imagen. El rango sugerido para el argumento flotante es [-1, 1].
     - Opacity: Modifica el canal alpha de una imagen (es decir su transparencia). El rango sugerido para el argumento flotante es [-1, 1].
+    - Highlights: Modifica la exposicion de las luces. El rango sugerido para el argumento flotante es [-1, 1].
+    - Shadows: Modifica la exposicion de las sombras. El rango sugerido para el argumento flotante es [-1, 1].
+
+    Los argumentos neutros de todas las funciones es 0, con excepcion de 'Temp' la cual es 6500.
+
 - Complement x: Invierte los colores de la imagen resultante de evaluar la expresión 'x'.
 
 
@@ -126,8 +139,9 @@ UOp = "Temp"
 
 A continuación una breve descripción de cada módulo:
 - Parser.hs: Contiene las funciones asociadas al parseo de términos del lenguaje.
-- Common.hs: Contiene los tipos con los que se maneja el lenguaje, como así también las funciones de mezclado y edición.
-- Main.hs: Contiene todas las funciones y monadas relacionadas a la evaluación de términos, como así también los tipos y funciones necesarios para facilitar el uso del lenguaje compilado con sus argumentos opcionales. Se optó por poner los evaluadores y las funciones utilizadas en el programa compilado en un mismo archivo ya que se requiere el uso de la opción de lenguaje de contextos flexibles, la cual no se habilita al utilizar el archivo como módulo.
+- Common.hs: Contiene los tipos con los que se maneja el lenguaje, como así también las funciones de mezclado y edición para pixeles e imagenes
+- Eval.hs:   Contiene todas las funciones y monadas relacionadas a la evaluacion de terminos.
+- Main.hs:   Contiene los tipos y funciones necesarios para usar el lenguaje compilado con sus argumentos opcionales.
 
 ## Decisiones de diseño
 
@@ -141,7 +155,9 @@ El tipo LamTerm tiene un tipo Op y un tipo UOp entre los argumentos de sus const
 
 La mayoría de las funciones de mezclado están conformadas por una función que toma dos canales de dos imágenes y da un canal resultante y una función que permite la aplicación de la función descrita en los canales de un pixel (y en última instancia, en toda la imagen). Se prefirió que están definidas de esta manera ya que se puede observar muy fácilmente que hace cada función del lenguaje con los canales de un pixel. Las funciones que no están definidas de esta manera toman dos pixeles de dos imagenes y dan un pixel resultante; es necesario escribirlos de esta manera ya que se necesita realizar una conversión a otro espacio de colores, necesitando así las 3 componentes de un pixel RGB. Lo mismo sucede con las funciones de edición.
 
-Se hizo uso de la opción de lenguaje FlexibleContexts para "tranquilizar" a ghc y poder compilar.
+Se escribio una funcion "Imagen -> Imagen -> Imagen" relacionada a cada operacion para, ademas de facilitar la interpretacion, poder realizar una clara distincion entre las funciones deribadas y primitivas.
+
+A simple vista como las funciones 'Screen', 'ColorBurn' y 'HardLight' pueden definirse a partir de otras funciones primitivas podrian ser interpretadas como funciones derivadas, y aunque ese es el caso de 'Screen' y 'ColorBurn' no sucede con 'HardLight'. El modo de blending "Hard Light" se define como aplicar el modo Overlay con las imagenes argumento intercambiadas, pero en la funcion que se encargara de aplicar los modos de blending a los pixeles debe tener en cuenta los pixeles alpha al aplicar el mezclado, por lo cual solamente intercambiar las imagenes argumento se interpretaria como cambiar el orden de las "capas" (si 'x' estaba encima de 'y' ahora 'y' esta encima de 'x'), dando un resultado indeseado. Por lo que no podremos componer 'Hard Light' a partir de la funcion de 'Overlay' y pasara a ser una funcion primitiva.
 
 Para la monada principal hice uso del concepto de "transformadores de monadas", que se basa en combinar los efectos de diferentes monadas. En mi caso necesitaba combinar una monada error con la monada IO. Dicha monada me permite, una vez realizado la evaluación del término, dar un resultado encapsulado en la monada IO () (ya sea teniendo una imagen resultado o un mensaje de error) necesario para que el resultado de la monada original se vea reflejado en la salida de la computadora. Fue necesario el uso de transformadores de monadas ya que la biblioteca de imágenes utilizada devuelve una imagen leída encapsulada en una monada IO, por lo cual definir una nueva monada que contenga los comportamientos de IO con una monada de error no era suficiente.
 
