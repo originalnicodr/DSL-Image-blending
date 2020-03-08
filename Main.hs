@@ -81,7 +81,7 @@ maini x= runCommand $ \opts args -> do
                               let a=addappi x (fApp opts)
                                 in a>>= (\v ->case (fMode opts) of
                                               1 -> eval v (fDir opts) evalTerm1
-                                              2 -> eval v (fDir opts) evalTerm1
+                                              2 -> eval v (fDir opts) evalTerm2
                                               3 -> eval v (fDir opts) evalTerm3)
 
 ----Main para lectura de archivo

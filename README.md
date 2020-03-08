@@ -81,7 +81,7 @@ Los Terminos se basan en una combinación de operaciones "binarias" y "unarias" 
     - Saturation: Modifica la saturación de una imagen. El rango sugerido para el argumento flotante es [-1, 1].
 
     - Exposure: Modifica la exposición de una imagen. El rango sugerido para el argumento flotante es [-1, 4].
-    
+
     - Contrast: Modifica el contraste de una imagen. El rango sugerido para el argumento flotante es [-1, 1].
 
     - Opacity: Modifica el canal alpha de una imagen (es decir su transparencia). El rango sugerido para el argumento flotante es [-1, 1].
@@ -153,14 +153,14 @@ ColorDodge | Color Dodge<br>CD
 ColorBurn | Color Burn<br>CB
 Hue | H<br>
 Luminosity | Lum<br>
-BlendColor | Blend Color<br>BC
+BlendColor | Blend Color<br>BC<br>Color
 BlendSaturation | BlendSat<br>Blend Saturation<br>BC
 Exclusion | E<br>
 Temperature | Temp<br>T
 Saturation | Sat<br>
 Exposure | Exp<br>
-Contrast | Cont<br>
-Opacity | 
+Contrast | Cont<br>C
+Opacity |
 Complement | Comp<br>
 
 
@@ -187,7 +187,13 @@ Bajo la misma idea se puede definir un elemento neutro en los siguientes modo de
 
 Interpretese una imagen de color blanco como una imagen en la cual todos sus pixeles tienen los componentes RGBA (0,0,0,-). Bajo la misma idea se interpreta a una imagen de color negro con pixeles RGBA (1,1,1,-), una imagen de color gris con pixeles RGBA (0.5,0.5,0.5,-) y una imagen transparente con pixeles RGBA (-,-,-,0).
 
+Ademas se puede observar la existencia de elementos absorbentes en algunas operaciones:
+- Luminosity: Imagen de color negro a derecha.
+- Exclusion: Imagen de color gris.
+
 Con respecto a los operadores que toman una imagen y un double no es posible que estos posean la propiedad conmutativa por razones de tipos, pero si poseen al 0 como elemento neutro a derecha, con excepcion el operador 'Temperature', el cual tiene a 6500 como elemento neutro a derecha.
+
+Todas las operaciones mencionadas son demostrables matemticamente.
 
 ## Distribución de modulos
 

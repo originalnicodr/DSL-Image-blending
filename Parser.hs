@@ -46,26 +46,26 @@ bopParser = (do (string "Normal"<|> string "N ")
                                                                    return Luminosity)
                                                                 <|>(do (string "Exclusion"<|> string "E ")
                                                                        return Exclusion)
-                                                                    <|>(do (string "BlendColor"<|> string "C " <|> string "BC "<|> string "Blend Color")
+                                                                    <|>(do (string "BlendColor"<|> string "BC "<|> string "Blend Color"<|> string "Color ")
                                                                            return BlendColor)
-                                                                        <|>(do (string "BlendSaturation"<|> string "BC "<|> string "Blend Saturation"<|>string "BlendSat")
+                                                                        <|>(do (string "BlendSaturation"<|> string "BS "<|> string "Blend Saturation"<|>string "BlendSat")
                                                                                return BlendSat)
 
 --Parser de operaciones de tipo UOp
 uopParser :: Parser UOp
 uopParser =(do (string "Temp "<|> string "Temperature"<|> string "T ")
                return Temp)
-                <|>(do (string "Sat "<|> string "Saturation"<|> string "S ")
+                <|>(do (string "Sat "<|> string "Saturation")
                        return Sat)
                     <|>(do (string "Exposure"<|> string "Exp ")
                            return Exposure)
-                        <|>(do (string "Contrast"<|> string "Cont ")
+                        <|>(do (string "Contrast"<|> string "Cont "<|> string "C ")
                                return Contrast)
                             <|>(do string "Shadows"
                                    return Shadows)
                                 <|>(do string "Highlights"
                                        return Highlights)
-                                    <|>(do (string "Opacity"<|> string "O ")
+                                    <|>(do (string "Opacity")
                                            return Opacity)
 
 --Parser de Terminos
@@ -101,7 +101,7 @@ parserLT =        (do symbol "Abs"
                                                    d <- floatParser
                                                    space
                                                    return (LUnOp f e1 (read d::Double)))
-                                                   <|> (do symbol "Complement"
+                                                   <|> (do symbol "Complement" <|>symbol "Comp"
                                                            e <- parserLT
                                                            space
                                                            return (LComplement e))

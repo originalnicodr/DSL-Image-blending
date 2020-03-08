@@ -1,1 +1,0 @@
-Abs x Darken <cluster.jpg> x
