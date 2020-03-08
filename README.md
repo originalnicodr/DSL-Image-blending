@@ -185,7 +185,7 @@ Bajo la misma idea se puede definir un elemento neutro en los siguientes modo de
 - ColorDodge: Imagen de color negro es neutro a derecha.
 - ColorBurn: Imagen de color blanco es neutro a izquierda.
 
-Interpretese una imagen de color blanco como una imagen en la cual todos sus pixeles tienen los componentes RGBA (0,0,0,-). Bajo la misma idea se interpreta a una imagen de color negro con pixeles RGBA (1,1,1,-), una imagen de color gris con pixeles RGBA (0.5,0.5,0.5,-) y una imagen transparente con pixeles RGBA (-,-,-,0).
+Interpretese una imagen de color blanco como una imagen en la cual todos sus pixeles tienen los componentes RGBA (0, 0, 0, -). Bajo la misma idea se interpreta a una imagen de color negro con pixeles RGBA (1 ,1, 1, -), una imagen de color gris con pixeles RGBA (0.5, 0.5, 0.5, -) y una imagen transparente con pixeles RGBA (-, -, -, 0).
 
 Ademas se puede observar la existencia de elementos absorbentes en algunas operaciones:
 - Luminosity: Imagen de color negro a derecha.
@@ -238,3 +238,4 @@ Agregar soporte para previsualización del resultado de evaluación en lugar de 
 - https://www.adobe.com/content/dam/acom/en/devnet/pdf/pdf_reference_archive/blend_modes.pdf
 - http://www.simplefilter.de/en/basics/mixmods.html
 - https://en.wikibooks.org/wiki/Haskell/Monad_transformers
+
