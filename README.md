@@ -207,7 +207,7 @@ A continuación una breve descripción de cada módulo:
 
 La implementación de lambda cálculo en el lenguaje me pareció necesaria ya que permite escribir archivos con funciones las cuales serán aplicadas con un input del usuario, facilitando así la interacción de un usuario con el lenguaje.
 
-Al utilizar una implementación de imágenes proporcionado por la biblioteca hip me vi obligado a diseñar el lenguaje como "Deep embedding", que aunque no sea tan elegante como una implementación de tipo "Shallow embedding" fue más simple analizar y buscar errores mientras se desarrollaba.
+Opte por una implementación del lenguaje de tipo "Deep embedding" para facilitar el debugging y poder tener diferentes evaluadores.
 
 El tipo LamTerm tiene un tipo Op y un tipo UOp entre los argumentos de sus constructores. Estos hacen referencia a una función de blending y edición respectivamente. Se optó por este enfoque en lugar de tener funciones asociadas a cada operación (Imagen->Imagen->Imagen y Imagen->Double->Imagen) como argumentos de los constructores para permitir su impresión en pantalla de ser necesario.
 
