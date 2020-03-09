@@ -154,7 +154,7 @@ ColorBurn | Color Burn<br>CB
 Hue | H<br>
 Luminosity | Lum<br>
 BlendColor | Blend Color<br>BC<br>Color
-BlendSaturation | BlendSat<br>Blend Saturation<br>BC
+BlendSaturation | BlendSat<br>Blend Saturation<br>BS
 Exclusion | E<br>
 Temperature | Temp<br>T
 Saturation | Sat<br>
