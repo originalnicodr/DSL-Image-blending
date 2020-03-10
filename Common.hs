@@ -47,11 +47,11 @@ data Op = Normal
 
 --Modos de edicion (funciones de tipo Image->Double->Image)
 data UOp = Temp --entre 1000 y 40000
-         | Sat --entre 0 y 1
+         | Sat --entre -1 y 1
          | Exposure --entre -1 y 1
-         | Contrast-- entre -1 y 1
-         | Shadows
-         | Highlights
+         | Contrast-- entre -1 y 4
+         | Shadows-- entre -1 y 1
+         | Highlights-- entre -1 y 1
          | Opacity--entre -1 y 1
          deriving Show
 
@@ -181,7 +181,7 @@ opposite::Pixel RGBA Double -> Pixel RGBA Double
 opposite= (\(PixelRGBA r g b a) -> (PixelRGBA (1-r) (1-g) (1-b) a))
 
 -- ///////////////////////////////////////////////
---Modos de blending y edicion aplicado a imagenes
+-- // Modos de blending y edicion aplicado a imagenes
 -- ///////////////////////////////////////////////
 
 --Para dos argumentos, mapeo y combino

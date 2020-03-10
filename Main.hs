@@ -1,5 +1,4 @@
-{-# LANGUAGE FlexibleContexts #-}--ViewPatterns
---import Prelude as P
+{-# LANGUAGE FlexibleContexts #-}
 import Graphics.Image as I
 import Parser
 import Eval
@@ -11,8 +10,7 @@ import System.Environment (getArgs, getProgName)
 data FileOptions = FileOptions
    { fApp :: String-- App (termino leido en el archivo) string a parsear
      , fDir :: String-- Direccion (ademas del nombre y la extension) en donde se guardara el archivos
-     , fMode :: Int --Modo de evaluacion que utiliza para --exact/resizeup/resizedown
-     --podria separarse fileDir en nombre y etenxion como argumentos aparte
+     , fMode :: Int --Modo de evaluacion que utiliza
    }
 
 instance Options FileOptions where
@@ -25,10 +23,9 @@ instance Options FileOptions where
            "Modo de evaluacion: 1 - Las imagenes que se usaran en funciones con dos argumentos necesitaran tener las mismas dimensiones\n                                 2 - Las imagenes aplicadas en funciones binarias daran una imagen resultante con el menor tamaño de ambas\n                                 3 - Las imagenes aplicadas en funciones binarias daran una imagen resultante con el mayor tamaño de ambas"
 
 data InterpetOptions = InterpetOptions
-   { iApp :: String-- App (termino leido en el archivo) string a parsear
+   { iApp :: String-- App (termino parseado) archivos a parsear
      , iDir :: String-- Direccion (ademas del nombre y la extension) en donde se guardara el archivos
-     , iMode :: Int --Modo de evaluacion que utiliza para --exact/resizeup/resizedown
-     --podria separarse fileDir en nombre y etenxion como argumentos aparte
+     , iMode :: Int --Modo de evaluacion que utiliza
    }
 
 instance Options InterpetOptions where
@@ -52,7 +49,7 @@ eval t s feval= case (parsear t) of
 --Funcion utilizada para agregar argumentos con aplicaciones al termino parseado
 addappi :: String -> String -> IO [Char]
 addappi s xs=  case (parse (sepBy (many (sat (\v->v/=','))) (char ',')) xs) of
-                [([""],"")] -> return s--addappi' s []
+                [([""],"")] -> return s
                 [(x,y)]-> addappi' s x
 
 addappi'::String->[String]->IO String

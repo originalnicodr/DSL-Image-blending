@@ -8,6 +8,7 @@ import Control.Applicative hiding (many)
 floatParser :: Parser String
 floatParser = do x<-sat (\x -> (x=='-') || (isDigit x) || (x=='.')) --podria mejorarse para que solo exista un punto y un signo negativo
                  xs<-many (sat (\x -> (isDigit x) || (x=='.')))
+                 space
                  return (x:xs)
 
 --Parser utilizado para parsear de directorios (estos estaran entre los caracteres <>)
@@ -16,104 +17,88 @@ directory = sat (\x -> (x/='>'))
 
 --Parser de operaciones de tipo Op
 bopParser :: Parser Op
-bopParser = (do (string "Normal"<|> string "N ")
+bopParser = (do (symbol "Normal"<|> symbol "N ")
                 return Normal)
-            <|>(do (string "Add"<|> string "A ")
+            <|>(do (symbol "Add"<|> symbol "A ")
                    return Add)
-                <|>(do (string "Diff"<|> string "Difference ")
+                <|>(do (symbol "Diff"<|> symbol "Difference ")
                        return Diff)
-                    <|>(do (string "ColorDodge"<|> string "CD "<|> string "Color Dodge")
+                    <|>(do (symbol "ColorDodge"<|> symbol "CD "<|> symbol "Color Dodge")
                            return ColorDodge)
-                        <|>(do (string "ColorBurn"<|> string "CB "<|> string "Color Burn")
+                        <|>(do (symbol "ColorBurn"<|> symbol "CB "<|> symbol "Color Burn")
                                return ColorBurn)
-                            <|>(do (string "Darken"<|> string "D ")
+                            <|>(do (symbol "Darken"<|> symbol "D ")
                                    return Darken)
-                                <|>(do (string "Lighten"<|> string "L ")
+                                <|>(do (symbol "Lighten"<|> symbol "L ")
                                        return Lighten)
-                                    <|>(do (string "Multiply"<|> string "M ")
+                                    <|>(do (symbol "Multiply"<|> symbol "M ")
                                            return Multiply)
-                                        <|>(do (string "Screen"<|> string "S ")
+                                        <|>(do (symbol "Screen"<|> symbol "S ")
                                                return Screen)
-                                            <|>(do (string "Overlay"<|> string "O ")
+                                            <|>(do (symbol "Overlay"<|> symbol "O ")
                                                    return Overlay)
-                                                <|>(do (string"HardLight"<|> string "HL "<|> string "Hard Light")
+                                                <|>(do (symbol"HardLight"<|> symbol "HL "<|> symbol "Hard Light")
                                                        return HardLight)
-                                                    <|>(do (string "SoftLight"<|> string "SL "<|> string "Soft Light")
+                                                    <|>(do (symbol "SoftLight"<|> symbol "SL "<|> symbol "Soft Light")
                                                            return SoftLight)
-                                                        <|>(do (string "Hue"<|> string "H ")
+                                                        <|>(do (symbol "Hue"<|> symbol "H ")
                                                                return Hue)
-                                                            <|>(do (string "Luminosity"<|>string "Lum ")
+                                                            <|>(do (symbol "Luminosity"<|>symbol "Lum ")
                                                                    return Luminosity)
-                                                                <|>(do (string "Exclusion"<|> string "E ")
+                                                                <|>(do (symbol "Exclusion"<|> symbol "E ")
                                                                        return Exclusion)
-                                                                    <|>(do (string "BlendColor"<|> string "BC "<|> string "Blend Color"<|> string "Color ")
+                                                                    <|>(do (symbol "BlendColor"<|> symbol "BC "<|> symbol "Blend Color"<|> symbol "Color ")
                                                                            return BlendColor)
-                                                                        <|>(do (string "BlendSaturation"<|> string "BS "<|> string "Blend Saturation"<|>string "BlendSat")
+                                                                        <|>(do (symbol "BlendSaturation"<|> symbol "BS "<|> symbol "Blend Saturation"<|>symbol "BlendSat")
                                                                                return BlendSat)
 
 --Parser de operaciones de tipo UOp
 uopParser :: Parser UOp
-uopParser =(do (string "Temp "<|> string "Temperature"<|> string "T ")
+uopParser =(do (symbol "Temp "<|> symbol "Temperature"<|> symbol "T ")
                return Temp)
-                <|>(do (string "Sat "<|> string "Saturation")
+                <|>(do (symbol "Sat "<|> symbol "Saturation")
                        return Sat)
-                    <|>(do (string "Exposure"<|> string "Exp ")
+                    <|>(do (symbol "Exposure"<|> symbol "Exp ")
                            return Exposure)
-                        <|>(do (string "Contrast"<|> string "Cont "<|> string "C ")
+                        <|>(do (symbol "Contrast"<|> symbol "Cont "<|> symbol "C ")
                                return Contrast)
-                            <|>(do string "Shadows"
+                            <|>(do symbol "Shadows"
                                    return Shadows)
-                                <|>(do string "Highlights"
+                                <|>(do symbol "Highlights"
                                        return Highlights)
-                                    <|>(do (string "Opacity")
+                                    <|>(do (symbol "Opacity")
                                            return Opacity)
 
 --Parser de Terminos
 parserLT:: Parser LamTerm
 parserLT =        (do symbol "Abs"
-                      space
-                      v <- many1 (sat isAlphaNum) --los nombres de variables spueden ser alfanumericos
-                      space
+                      v <- many1 (sat isAlphaNum) --los nombres de variables pueden ser alfanumericos
                       e <- parserLT
                       return (Abs v e))
                       <|>(do symbol "App"
                              e1 <- parserLT
-                             space
                              e2 <- parserLT
-                             space
                              return (App e1 e2))
                              <|>(do symbol "<"
                                     d <- many1 directory
                                     symbol ">"
-                                    space
                                     return (LIC d))
                                     <|>(do f <- bopParser
-                                           space
                                            e1 <- parserLT
-                                           space
                                            e2 <- parserLT
-                                           space
                                            return (LBinOp f e1 e2))
                                            <|> (do f <- uopParser
-                                                   space
-                                                   e1 <- parserLT
-                                                   space
+                                                   e <- parserLT
                                                    d <- floatParser
-                                                   space
-                                                   return (LUnOp f e1 (read d::Double)))
+                                                   return (LUnOp f e (read d::Double)))
                                                    <|> (do symbol "Complement" <|>symbol "Comp"
                                                            e <- parserLT
-                                                           space
                                                            return (LComplement e))
                                                            <|> (do v <- many1 alphanum --los nombres de variables pueden ser alfanumericos (Muchas veces el escribir mal un termino resultara en parsear algo como variable cuando no lo es)
-                                                                   space
                                                                    return (LVar v))
                                                                    <|>(do symbol "("
-                                                                          space
                                                                           e <- parserLT
-                                                                          space
                                                                           symbol ")"
-                                                                          space
                                                                           return e)
 ------------------------------------
 -- Función de parseo

@@ -38,6 +38,7 @@ Además de los comandos presentados se puede utilizar diferentes flags con confi
 - --exec='s': Permite aplicar términos argumentos a un término leído. Tenga en cuenta que el término parseado debe ser una función y que 's' corresponde a una serie de nombre de un archivo o términos dependiendo si se utilizó el comando i o f respectivamente (estos separados por comas). El evaluador se encargará de agregar las aplicaciones necesarias.
 - --d='dir': Permite especificar la dirección en donde se guardará el archivo (relativa o absoluta) además del nombre y el formato de la imagen de salida. Se exportará el archivo como `output.png` de forma predeterminada en el directorio local.
 - --m='x': Permite elegir el modo de evaluación. Estos son:
+- -h: Mensaje de ayuda con esta informacion.
 
     - 1: Las imágenes que se usarán en funciones con dos argumentos necesitaran tener las mismas dimensiones.
     - 2: Las imágenes aplicadas en funciones binarias darán una imagen resultante con el menor tamaño de ambas.
@@ -51,7 +52,7 @@ Alternativamente puede prescindir de haskell compilando el programa con `ghc Mai
 
 Los términos se basan en una combinación de operaciones "binarias" y "unarias" de imágenes (lease operaciones binarias a funciones que toman dos imágenes como argumentos y operaciones unarias como funciones que toman una imagen como argumento más un double que hará de "slider" si se quiere pensar). Además se agrega el potencial del lambda cálculo para definir funciones y variables.
 
-- Var: Variable.
+- Var: Nombre de variable. Este debe ser alfanumerico.
 - Abs x y: Definicion de funcion 'y' en donde su variable es 'x'.
 - App x y: Aplicación de la expresión 'x' en 'y' ('y' debe ser una función, caso contrario se devolverá un error)
 - '<'s'>': Lectura de una imagen, en donde s es una dirección relativa o absoluta de un archivo.

@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts #-}--ViewPatterns
+{-# LANGUAGE FlexibleContexts #-}
 module Eval where
 import Graphics.Image as I
 import Common
@@ -128,7 +128,7 @@ evalTerm1 (Free n)        = raise ("Se identifico a "++(show n)++" como una vari
 evalTerm1 (Lam t)         = raise "Funcion sin termino para reemplazar en la variable"
 evalTerm1 (Lam u :@: v)   = evalTerm1 (sub 0 v u)
 evalTerm1 (u :@: v)       = raise "Termino trabado: no se puede realizar la aplicacion"--Las aplicaciones ya se resolvieron en el beta redex, si se encuentra una aplicacion se mandara un mensaje
-evalTerm1 (IC dim)        = ErrorMT (do x <- readImageRGBA VU dim--podria usar el isValid de la biblioteca de Path para revisar que la direccion sea valida y mandar un error
+evalTerm1 (IC dim)        = ErrorMT (do x <- readImageRGBA VU dim
                                         return (JustE x))
 evalTerm1 (BinOp f e1 e2) = (evalTerm1 e1) >>= (\x -> (evalTerm1 e2) >>= (\y -> if ((dims x) == (dims y)) then return ((convfb f) x y ) else ErrorMT (return (EM "Las imagenes tienen dimensiones diferentes"))))--Como necesito los bind de IO para sacar las imagenes los return tienen que estar escritos asi
 evalTerm1 (UnOp f e1 d)   = (evalTerm1 e1) >>= (\x -> return ((convfu f) x d))
@@ -157,7 +157,7 @@ evalTerm2 (Free n)        = raise ("Se identifico a "++(show n)++" como una vari
 evalTerm2 (Lam t)         = raise "Funcion sin termino para reemplazar en la variable"
 evalTerm2 (Lam u :@: v)   = evalTerm2 (sub 0 v u)
 evalTerm2 (u :@: v)       = raise "Termino trabado: no se puede realizar la aplicacion"--Las aplicaciones ya se resolvieron en el beta redex, si se encuentra una aplicacion se mandara un mensaje
-evalTerm2 (IC dim)        = ErrorMT (do x <- readImageRGBA VU dim--podria usar el isValid de la biblioteca de Path para revisar que la direccion sea valida y mandar un error
+evalTerm2 (IC dim)        = ErrorMT (do x <- readImageRGBA VU dim
                                         return (JustE x))
 evalTerm2 (BinOp f e1 e2) = (evalTerm2 e1) >>= (\x -> (evalTerm2 e2) >>= (\y -> if ((dims x) == (dims y)) then return ((convfb f) x y) else let (x',y')=cut x y
                                                                                                                                                     in return ((convfb f) x' y')))--Como necesito los bind de IO para sacar las imagenes los return tienen que estar escritos asi
@@ -188,7 +188,7 @@ evalTerm3 (Free n)        = raise ("Se identifico a "++(show n)++" como una vari
 evalTerm3 (Lam t)         = raise "Funcion sin termino para reemplazar en la variable"
 evalTerm3 (Lam u :@: v)   = evalTerm3 (sub 0 v u)
 evalTerm3 (u :@: v)       = raise "Termino trabado: no se puede realizar la aplicacion"--Las aplicaciones ya se resolvieron en el beta redex, si se encuentra una aplicacion se mandara un mensaje
-evalTerm3 (IC dim)        = ErrorMT (do x <- readImageRGBA VU dim--podria usar el isValid de la biblioteca de Path para revisar que la direccion sea valida y mandar un error
+evalTerm3 (IC dim)        = ErrorMT (do x <- readImageRGBA VU dim
                                         return (JustE x))
 evalTerm3 (BinOp f e1 e2) = (evalTerm3 e1) >>= (\x -> (evalTerm3 e2) >>= (\y -> if ((dims x) == (dims y)) then return ((convfb f) x y) else let (x',y')=adjust x y
                                                                                                                                                     in return ((convfb f) x' y')))--Como necesito los bind de IO para sacar las imagenes los return tienen que estar escritos asi
