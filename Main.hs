@@ -7,36 +7,20 @@ import Parsing
 import Options
 import System.Environment (getArgs, getProgName)
 
-data FileOptions = FileOptions
-   { fApp :: String-- App (termino leido en el archivo) string a parsear
-     , fDir :: String-- Direccion (ademas del nombre y la extension) en donde se guardara el archivos
-     , fMode :: Int --Modo de evaluacion que utiliza
+data MainOptions = MainOptions
+   { mApp :: String-- App (termino leido en el archivo) string a parsear
+     , mDir :: String-- Direccion (ademas del nombre y la extension) en donde se guardara el archivos
+     , mMode :: Int --Modo de evaluacion que utiliza
    }
 
-instance Options FileOptions where
-   defineOptions = pure FileOptions
+instance Options MainOptions where
+   defineOptions = pure MainOptions
        <*> simpleOption "exec" []
-           "Si vas a realizar una aplicacion de un termino sobre lo leido en el archivo"
+           "Realiza una aplicacion de un termino sobre lo leido en el archivo si se utilizo el comando f o realiza una aplicacion de lo leido en un archivo sobre el termino si se usa el comando i"
        <*> simpleOption "d" "output.png"
            "Direccion (ademas del nombre y la extension) en donde se guardara el archivos"
        <*> simpleOption "m" 1
            "Modo de evaluacion: 1 - Las imagenes que se usaran en funciones con dos argumentos necesitaran tener las mismas dimensiones\n                                 2 - Las imagenes aplicadas en funciones binarias daran una imagen resultante con el menor tamaño de ambas\n                                 3 - Las imagenes aplicadas en funciones binarias daran una imagen resultante con el mayor tamaño de ambas"
-
-data InterpetOptions = InterpetOptions
-   { iApp :: String-- App (termino parseado) archivos a parsear
-     , iDir :: String-- Direccion (ademas del nombre y la extension) en donde se guardara el archivos
-     , iMode :: Int --Modo de evaluacion que utiliza
-   }
-
-instance Options InterpetOptions where
-   defineOptions = pure InterpetOptions
-       <*> simpleOption "exec" []
-           "Si vas a realizar una aplicacion de lo leido en un archivo sobre el termino"
-       <*> simpleOption "d" "output.png"
-           "Direccion (ademas del nombre y la extension) en donde se guardara el archivos"
-       <*> simpleOption "m" 1
-           "Modo de evaluacion: 1 - Las imagenes que se usaran en funciones con dos argumentos necesitaran tener las mismas dimensiones\n                                 2 - Las imagenes aplicadas en funciones binarias daran una imagen resultante con el menor tamaño de ambas\n                                 3 - Las imagenes aplicadas en funciones binarias daran una imagen resultante con el mayor tamaño de ambas"
-
 
 --Funcion de evaluacion que toma como argumento el termino a parsear, la direccion en la que se guardara la imagen y una funcion de evaluacion de termino (evalTerm1, evalTerm2, evalTerm3)
 eval t s feval= case (parsear t) of
@@ -75,17 +59,17 @@ main = do prog <- getProgName
 --Main para interprete
 maini :: String->IO ()
 maini x= runCommand $ \opts args -> do
-                              let a=addappi x (fApp opts)
-                                in a>>= (\v ->case (fMode opts) of
-                                              1 -> eval v (fDir opts) evalTerm1
-                                              2 -> eval v (fDir opts) evalTerm2
-                                              3 -> eval v (fDir opts) evalTerm3)
+                              let a=addappi x (mApp opts)
+                                in a>>= (\v ->case (mMode opts) of
+                                              1 -> eval v (mDir opts) evalTerm1
+                                              2 -> eval v (mDir opts) evalTerm2
+                                              3 -> eval v (mDir opts) evalTerm3)
 
 ----Main para lectura de archivo
 mainf :: String->IO ()
 mainf x= runCommand $ \opts args  -> do
              let a = readFile x
-               in case fMode opts of
-                   1 -> a>>= (\v -> eval (addappf v (fApp opts)) (fDir opts) evalTerm1)
-                   2 -> a>>= (\v -> eval (addappf v (fApp opts)) (fDir opts) evalTerm2)
-                   3 -> a>>= (\v -> eval (addappf v (fApp opts)) (fDir opts) evalTerm3)
+               in case mMode opts of
+                   1 -> a>>= (\v -> eval (addappf v (mApp opts)) (mDir opts) evalTerm1)
+                   2 -> a>>= (\v -> eval (addappf v (mApp opts)) (mDir opts) evalTerm2)
+                   3 -> a>>= (\v -> eval (addappf v (mApp opts)) (mDir opts) evalTerm3)
