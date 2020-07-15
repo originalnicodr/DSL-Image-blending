@@ -161,7 +161,7 @@ exposure::Double->Pixel RGBA Double -> Pixel RGBA Double
 exposure d a=rgbamap (\y -> clamp((1+d)*y)) a--le sumo 1 a d para manener el neutro en 0
 
 opacity::Double->Pixel RGBA Double -> Pixel RGBA Double
-opacity d (PixelRGBA r g b a) = (PixelRGBA r g b (clamp (a+d)))--modifica la opasidad uniformemente (y la satura)
+opacity d (PixelRGBA r g b a) = (PixelRGBA r g b (clamp (a+d)))--modifica la opacidad uniformemente (y la satura)
 
 kelvinToRGBA::Double->Pixel RGBA Double
 kelvinToRGBA k =let kelvin=(clamp2 k 1000 40000)/100

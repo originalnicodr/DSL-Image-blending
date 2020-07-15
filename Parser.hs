@@ -84,11 +84,15 @@ parserLT =        (do symbol "Abs"
                                     symbol ">"
                                     return (LIC d))
                                     <|>(do f <- bopParser
+                                           space
                                            e1 <- parserLT
+                                           space
                                            e2 <- parserLT
                                            return (LBinOp f e1 e2))
                                            <|> (do f <- uopParser
+                                                   space
                                                    e <- parserLT
+                                                   space
                                                    d <- floatParser
                                                    return (LUnOp f e (read d::Double)))
                                                    <|> (do symbol "Complement" <|>symbol "Comp"

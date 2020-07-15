@@ -30,6 +30,12 @@ eval t s feval= case (parsear t) of
                                       JustE x -> writeImage s x
                                       EM e -> print e)
 
+{-
+eval t s feval= case (parsear t) of
+                []-> print "Error de parseo, revise el termino ingresado"
+                t'-> print t'
+-}
+
 --Funcion utilizada para agregar argumentos con aplicaciones al termino parseado
 addappi :: String -> String -> IO [Char]
 addappi s xs=  case (parse (sepBy (many (sat (\v->v/=','))) (char ',')) xs) of
